@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>TRC CF Tracker</title>
+  <style>
+    :root {
+      --primary:       #1A237E;
+      --primary-mid:   #283593;
+      --primary-light: #3949AB;
+      --bg:            #ECEEF6;
+      --card:          #FFFFFF;
+      --text:          #1C1C1E;
+      --muted:         #6B7280;
+      --border:        #CBD5E1;
+      --border-focus:  #3949AB;
+      --error:         #DC2626;
+      --success:       #15803D;
+      --amber:         #D97706;
+      --radius:        10px;
+      --shadow:        0 1px 4px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Login Screen ── */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      background: var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 200;
+    }
+    .login-brand {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 28px;
+    }
+    .login-icon {
+      width: 60px; height: 60px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 12px;
+    }
+    .login-brand h1 { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+    .login-brand p  { font-size: 13px; opacity: 0.7; margin-top: 4px; }
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .login-card label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary-mid);
+      margin-bottom: 5px;
+    }
+    .login-card input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      color: var(--text);
+      transition: border-color 0.18s;
+    }
+    .login-card input:focus { border-color: var(--border-focus); }
+    .login-gap { height: 14px; }
+    .login-err {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--error);
+    }
+    .btn-login {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: 0.4px;
+    }
+    .btn-login:disabled { background: var(--muted); cursor: not-allowed; }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
+    header p  { font-size: 11px; opacity: 0.7; margin-top: 1px; }
+    .logout-btn {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .logout-btn:active { background: rgba(255,255,255,0.25); }
+
+    /* ── Layout ── */
+    .wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 14px 14px 40px;
+    }
+
+    /* ── Banners ── */
+    #loadBanner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #EEF2FF;
+      border: 1px solid #C7D2FE;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--primary-mid);
+      font-weight: 500;
+    }
+    #loadBanner.hidden { display: none; }
+    #errBanner {
+      display: none;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--error);
+    }
+    #errBanner strong { display: block; margin-bottom: 6px; font-size: 14px; }
+    #errBanner .err-steps { color: #7F1D1D; line-height: 1.6; }
+    #errBanner .err-detail { margin-top: 6px; font-size: 12px; color: #991B1B; word-break: break-word; }
+    #errBanner button {
+      margin-top: 10px;
+      padding: 7px 16px;
+      border: 1.5px solid var(--error);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--error);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--primary-light);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--bg);
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary-mid);
+      margin-bottom: 5px;
+    }
+    label .req { color: var(--error); margin-left: 1px; }
+    label .opt { color: var(--muted); font-weight: 400; }
+
+    .remembered-hint { font-size: 11px; color: var(--success); margin-top: 4px; display: none; }
+    .remembered-hint.show { display: block; }
+
+    input[type="date"], input[type="number"], input[type="text"],
+    input[type="email"], input[type="password"], select, textarea {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--text);
+      background: #FAFBFF;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    select {
+      padding-right: 36px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+    }
+    #amount {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+      padding: 14px 13px;
+      letter-spacing: 0.5px;
+    }
+    textarea { resize: none; height: 76px; line-height: 1.5; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(57,73,171,0.12);
+      background: #fff;
+    }
+    input.invalid, select.invalid, textarea.invalid {
+      border-color: var(--error);
+      background: #FFF8F8;
+    }
+    select.loading {
+      color: transparent;
+      background-color: #E8EAF6;
+      background-image: none;
+      border-color: #C5CAE9;
+      pointer-events: none;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.45} }
+    .err-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
+    .err-msg.show { display: block; }
+
+    /* ── Submit ── */
+    .btn-submit {
+      width: 100%;
+      padding: 15px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 3px 10px rgba(26,35,126,0.35);
+      transition: background 0.18s, transform 0.1s;
+    }
+    .btn-submit:active:not(:disabled) { transform: scale(0.98); }
+    .btn-submit:disabled { background: var(--muted); box-shadow: none; cursor: not-allowed; }
+
+    /* ── Spinners ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner.dark {
+      border-color: rgba(26,35,126,0.2);
+      border-top-color: var(--primary);
+      width: 14px; height: 14px;
+    }
+
+    /* ── Entries ── */
+    .entries-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 20px 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .badge {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      min-width: 20px;
+      text-align: center;
+    }
+    .entry-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      margin-bottom: 10px;
+      position: relative;
+      transition: opacity 0.2s;
+    }
+    .entry-card.deleted { opacity: 0.45; }
+    .entry-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .entry-meta { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .entry-meta strong { color: var(--text); font-size: 12px; }
+    .entry-amount { font-size: 20px; font-weight: 800; color: var(--primary); white-space: nowrap; }
+    .entry-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .tag {
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 100px;
+      background: #EEF2FF; color: var(--primary-light);
+    }
+    .entry-flow { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .entry-flow span { color: var(--text); font-weight: 500; }
+    .entry-details { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .delete-btn {
+      position: absolute; top: 12px; right: 12px;
+      background: none; border: none;
+      color: #CBD5E1; font-size: 16px;
+      cursor: pointer; padding: 4px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .delete-btn:active { color: var(--error); }
+    .deleted-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: var(--error); background: #FEE2E2;
+      border-radius: 4px; padding: 2px 6px;
+      margin-left: 6px; vertical-align: middle; text-transform: uppercase;
+    }
+    .empty-entries { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(90px);
+      padding: 12px 22px; border-radius: 100px;
+      font-size: 14px; font-weight: 600; color: #fff;
+      z-index: 999;
+      transition: transform 0.32s cubic-bezier(.34,1.56,.64,1), opacity 0.2s;
+      opacity: 0; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.ok   { background: var(--success); }
+    .toast.fail { background: var(--error); }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen">
+  <div class="login-brand">
+    <div class="login-icon">₨</div>
+    <h1>TRC CF Tracker</h1>
+    <p>Cash Flow Management</p>
+  </div>
+  <div class="login-card">
+    <div class="field">
+      <label for="loginUser">Username</label>
+      <input type="text" id="loginUser" placeholder="Enter your username"
+             autocapitalize="none" autocomplete="username">
+    </div>
+    <div class="login-gap"></div>
+    <div class="field">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" placeholder="Enter your password"
+             autocomplete="current-password">
+    </div>
+    <div id="loginErr" class="login-err" style="display:none;"></div>
+    <button class="btn-login" id="loginBtn">Login</button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="appScreen" style="display:none;">
+  <header>
+    <div>
+      <h1>TRC CF Tracker</h1>
+      <p>New Transaction</p>
+    </div>
+    <button class="logout-btn" id="logoutBtn">
+      <span id="headerUser"></span> · Logout
+    </button>
+  </header>
+
+  <div class="wrap">
+
+    <div id="loadBanner">
+      <span class="spinner dark"></span>
+      Loading options from sheet…
+    </div>
+
+    <div id="errBanner">
+      <strong>Could not load dropdown options</strong>
+      <div class="err-steps">
+        1. Apps Script redeployed as <b>New version</b>?<br>
+        2. <b>KEYS</b> tab exists in your Google Sheet?<br>
+        3. KEYS columns: PARTIES, PERSON_TYPES, TRANS_TYPES, SHOPS, ENTERED_BY, ACTIVITIES, USER, PASSWORD
+      </div>
+      <div class="err-detail" id="errDetail"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button onclick="loadKeys()">↺ Retry</button>
+        <button onclick="testScript()" style="border-color:var(--primary);color:var(--primary);">⧉ Test Script</button>
+      </div>
+    </div>
+
+    <form id="form" novalidate>
+
+      <div class="card">
+        <div class="card-title">Shop</div>
+        <div class="field">
+          <label for="shop">Select Shop <span class="req">*</span></label>
+          <select id="shop" class="loading"><option value="">Loading…</option></select>
+          <div class="err-msg" id="e-shop">Select a shop</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Entered By</div>
+        <div class="field">
+          <label for="enteredBy">Select Person <span class="req">*</span></label>
+          <select id="enteredBy" class="loading"><option value="">Loading…</option></select>
+          <div class="remembered-hint" id="enteredByHint">✓ Auto-set from login</div>
+          <div class="err-msg" id="e-enteredBy">Select who is entering this record</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Transaction Info</div>
+        <div class="row-2">
+          <div class="field">
+            <label for="date">Date <span class="req">*</span></label>
+            <input type="date" id="date">
+            <div class="err-msg" id="e-date">Select a date</div>
+          </div>
+          <div class="field">
+            <label for="type">Type <span class="req">*</span></label>
+            <select id="type" class="loading"><option value="">Loading…</option></select>
+            <div class="err-msg" id="e-type">Select a type</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="activity">Activity <span class="req">*</span></label>
+          <select id="activity" class="loading"><option value="">Loading…</option></select>
+          <div class="err-msg" id="e-activity">Select an activity</div>
+        </div>
+        <div class="field">
+          <label for="details">Details <span class="req">*</span></label>
+          <textarea id="details" placeholder="Describe the transaction…"></textarea>
+          <div class="err-msg" id="e-details">Enter transaction details</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Paid To</div>
+        <div class="row-2">
+          <div class="field">
+            <label for="paidTo">Name <span class="req">*</span></label>
+            <select id="paidTo" class="loading"><option value="">Loading…</option></select>
+            <div class="err-msg" id="e-paidTo">Select a name</div>
+          </div>
+          <div class="field">
+            <label for="paidToType">Type <span class="req">*</span></label>
+            <select id="paidToType" class="loading"><option value="">Loading…</option></select>
+            <div class="err-msg" id="e-paidToType">Select a type</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Paid By</div>
+        <div class="row-2">
+          <div class="field">
+            <label for="paidBy">Name <span class="req">*</span></label>
+            <select id="paidBy" class="loading"><option value="">Loading…</option></select>
+            <div class="err-msg" id="e-paidBy">Select a name</div>
+          </div>
+          <div class="field">
+            <label for="paidByType">Type <span class="req">*</span></label>
+            <select id="paidByType" class="loading"><option value="">Loading…</option></select>
+            <div class="err-msg" id="e-paidByType">Select a type</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Payment Details</div>
+        <div class="field">
+          <label for="amount">Amount <span class="req">*</span></label>
+          <input type="number" id="amount" placeholder="0.00" step="any" inputmode="decimal">
+          <div class="err-msg" id="e-amount">Enter a valid amount</div>
+        </div>
+        <div class="field">
+          <label for="paymentMode">Payment Mode <span class="req">*</span></label>
+          <select id="paymentMode">
+            <option value="">— select —</option>
+            <option>Cash</option>
+            <option>Bank BAL</option>
+            <option>Bank ABL</option>
+            <option>Bank JC</option>
+            <option>Bank ASK</option>
+            <option>Bank MCB</option>
+          </select>
+          <div class="err-msg" id="e-paymentMode">Select a payment mode</div>
+        </div>
+        <div class="field">
+          <label for="remarks">Remarks <span class="opt">(optional)</span></label>
+          <textarea id="remarks" placeholder="Any additional notes…" style="height:60px;"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submitBtn" disabled>
+        Submit Transaction
+      </button>
+    </form>
+
+    <div class="entries-header">
+      <span>My Entries</span>
+      <span class="badge" id="entriesCount">0</span>
+    </div>
+    <div id="entriesList"></div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxlETGLSls6bxAvy1811cExWg6L-YMZYmaYFTFwHrwLORvxia_uOxd_5Ya8q2jvyOVw/exec';
+  const ENTRIES_KEY = 'trc_entries_v2';
+  const USER_KEY    = 'trc_last_user';
+
+  // ── JSONP ────────────────────────────────────────────────────────────────────
+  function jsonp(params, ms) {
+    return new Promise((resolve, reject) => {
+      const cb    = '_cb' + Date.now() + Math.floor(Math.random() * 1e6);
+      const sc    = document.createElement('script');
+      const timer = setTimeout(() => { cleanup(); reject(new Error('Request timed out')); }, ms || 20000);
+      function cleanup() { clearTimeout(timer); delete window[cb]; sc.parentNode && sc.parentNode.removeChild(sc); }
+      window[cb] = d => { cleanup(); resolve(d); };
+      sc.onerror = () => { cleanup(); reject(new Error('Network error — could not reach Apps Script.')); };
+      sc.src = SCRIPT_URL + '?' + new URLSearchParams(Object.assign({}, params, { callback: cb }));
+      document.head.appendChild(sc);
+    });
+  }
+
+  // ── Toast ────────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type;
+    clearTimeout(toastTimer);
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ══ LOGIN ══
+  const currentUser = sessionStorage.getItem('trc_user');
+  if (currentUser) launchApp(currentUser);
+
+  const lastUser = localStorage.getItem(USER_KEY);
+  if (lastUser) document.getElementById('loginUser').value = lastUser;
+
+  function doLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    const btn  = document.getElementById('loginBtn');
+    const err  = document.getElementById('loginErr');
+    if (!user || !pass) { showLoginErr('Enter both username and password.'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verifying…';
+    err.style.display = 'none';
+    jsonp({ action: 'login', user, password: pass }, 15000)
+      .then(json => {
+        if (json.status === 'success') {
+          sessionStorage.setItem('trc_user', json.user);
+          localStorage.setItem(USER_KEY, json.user);
+          launchApp(json.user);
+        } else {
+          showLoginErr(json.message || 'Login failed.');
+          btn.disabled = false;
+          btn.textContent = 'Login';
+        }
+      })
+      .catch(e => {
+        showLoginErr(e.message);
+        btn.disabled = false;
+        btn.textContent = 'Login';
+      });
+  }
+
+  function showLoginErr(msg) {
+    const e = document.getElementById('loginErr');
+    e.textContent = msg;
+    e.style.display = 'block';
+  }
+
+  function launchApp(user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display   = 'block';
+    document.getElementById('headerUser').textContent     = user;
+    initApp(user);
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem('trc_user');
+    location.reload();
+  }
+
+  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('logoutBtn').addEventListener('click', doLogout);
+
+  // ══ APP INIT ══
+  function initApp(user) {
+    document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
+    renderEntries();
+    loadKeys(user);
+  }
+
+  function fillSelect(id, items) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">— select —</option>';
+    (items || []).forEach(v => {
+      const o = document.createElement('option');
+      o.value = o.textContent = v;
+      sel.appendChild(o);
+    });
+    sel.classList.remove('loading');
+  }
+
+  async function loadKeys(user) {
+    document.getElementById('loadBanner').classList.remove('hidden');
+    document.getElementById('errBanner').style.display = 'none';
+    document.getElementById('submitBtn').disabled = true;
+    const dynIds = ['shop','enteredBy','type','activity','paidTo','paidBy','paidToType','paidByType'];
+    dynIds.forEach(id => {
+      const s = document.getElementById(id);
+      s.classList.add('loading');
+      s.innerHTML = '<option value="">Loading…</option>';
+    });
+    try {
+      const json = await jsonp({ action: 'keys' });
+      if (json.status !== 'success') throw new Error(json.message);
+      const keys   = json.data;
+      const needed = {
+        PARTIES: 'party names', PERSON_TYPES: 'person types',
+        TRANS_TYPES: 'transaction types', SHOPS: 'shop names',
+        ENTERED_BY: 'entered-by names', ACTIVITIES: 'activity types'
+      };
+      for (const [col, label] of Object.entries(needed)) {
+        if (!keys[col] || !keys[col].length)
+          throw new Error('"' + col + '" column missing or empty in KEYS sheet (' + label + ').');
+      }
+      fillSelect('shop',       keys['SHOPS']);
+      fillSelect('type',       keys['TRANS_TYPES']);
+      fillSelect('activity',   keys['ACTIVITIES']);
+      fillSelect('paidTo',     keys['PARTIES']);
+      fillSelect('paidBy',     keys['PARTIES']);
+      fillSelect('paidToType', keys['PERSON_TYPES']);
+      fillSelect('paidByType', keys['PERSON_TYPES']);
+      fillSelect('enteredBy',  keys['ENTERED_BY']);
+      const eb = document.getElementById('enteredBy');
+      const loggedUser = user || sessionStorage.getItem('trc_user') || '';
+      const match = Array.from(eb.options).find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
+      if (match) {
+        eb.value = match.value;
+        document.getElementById('enteredByHint').classList.add('show');
+      }
+      document.getElementById('loadBanner').classList.add('hidden');
+      document.getElementById('submitBtn').disabled = false;
+    } catch (err) {
+      document.getElementById('loadBanner').classList.add('hidden');
+      document.getElementById('errBanner').style.display = 'block';
+      document.getElementById('errDetail').textContent = 'Error: ' + err.message;
+      dynIds.forEach(id => {
+        const s = document.getElementById(id);
+        s.classList.remove('loading');
+        s.innerHTML = '<option value="">— unavailable —</option>';
+      });
+    }
+  }
+
+  function testScript() {
+    window.open(SCRIPT_URL + '?action=keys&callback=test', '_blank');
+  }
+
+  // ── Validation ────────────────────────────────────────────────────────────────
+  const REQUIRED = ['shop','enteredBy','date','type','activity','details','paidTo','paidToType','paidBy','paidByType','amount','paymentMode'];
+
+  function clearErr(id) {
+    document.getElementById(id).classList.remove('invalid');
+    const e = document.getElementById('e-' + id);
+    if (e) e.classList.remove('show');
+  }
+
+  REQUIRED.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) ['change','input'].forEach(ev => el.addEventListener(ev, () => clearErr(id)));
+  });
+
+  function validate() {
+    let ok = true;
+    REQUIRED.forEach(id => {
+      const el  = document.getElementById(id);
+      const val = el.value.trim();
+      const bad = !val || (id === 'amount' && isNaN(parseFloat(val)));
+      if (bad) {
+        el.classList.add('invalid');
+        const e = document.getElementById('e-' + id);
+        if (e) e.classList.add('show');
+        if (ok) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ok = false;
+      }
+    });
+    return ok;
+  }
+
+  function fmtDate(v) { const [y,m,d] = v.split('-'); return `${d}-${m}-${y}`; }
+  function fmtAmt(v)  { return parseFloat(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+
+  function resetForm() {
+    const eb = document.getElementById('enteredBy').value;
+    document.getElementById('form').reset();
+    document.getElementById('enteredBy').value = eb;
+    if (eb) document.getElementById('enteredByHint').classList.add('show');
+    document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
+    REQUIRED.forEach(clearErr);
+  }
+
+  document.getElementById('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!validate()) return;
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Submitting…';
+    const payload = {
+      date:        fmtDate(document.getElementById('date').value),
+      shop:        document.getElementById('shop').value,
+      type:        document.getElementById('type').value,
+      activity:    document.getElementById('activity').value,
+      details:     document.getElementById('details').value.trim(),
+      paidTo:      document.getElementById('paidTo').value,
+      paidToType:  document.getElementById('paidToType').value,
+      paidBy:      document.getElementById('paidBy').value,
+      paidByType:  document.getElementById('paidByType').value,
+      amount:      document.getElementById('amount').value,
+      paymentMode: document.getElementById('paymentMode').value,
+      remarks:     document.getElementById('remarks').value.trim(),
+      enteredBy:   document.getElementById('enteredBy').value
+    };
+    try {
+      const json = await jsonp(payload);
+      if (json.status === 'success') {
+        saveEntry({ ...payload, row: json.row, id: Date.now(), deleted: false });
+        toast('✓ Transaction recorded!', 'ok');
+        resetForm();
+      } else {
+        toast('⚠ ' + (json.message || 'Unknown error'), 'fail');
+      }
+    } catch (err) {
+      toast('✗ ' + err.message, 'fail');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit Transaction';
+    }
+  });
+
+  // ══ ENTRIES ══
+  function getEntries() {
+    try { return JSON.parse(localStorage.getItem(ENTRIES_KEY) || '[]'); } catch { return []; }
+  }
+
+  function saveEntry(entry) {
+    const entries = getEntries();
+    entries.unshift(entry);
+    if (entries.length > 100) entries.length = 100;
+    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+    renderEntries();
+  }
+
+  function markDeleted(id) {
+    const entries = getEntries();
+    const idx = entries.findIndex(e => e.id === id);
+    if (idx !== -1) { entries[idx].deleted = true; localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); }
+    renderEntries();
+  }
+
+  async function deleteEntry(id, row, enteredBy) {
+    if (!confirm('Mark this record as deleted in the sheet?')) return;
+    try {
+      const json = await jsonp({ action: 'delete', row, enteredBy });
+      if (json.status === 'success') { markDeleted(id); toast('Record marked as deleted', 'ok'); }
+      else toast('⚠ ' + json.message, 'fail');
+    } catch (err) { toast('✗ ' + err.message, 'fail'); }
+  }
+
+  function renderEntries() {
+    const entries = getEntries();
+    const list    = document.getElementById('entriesList');
+    const count   = document.getElementById('entriesCount');
+    count.textContent = entries.filter(e => !e.deleted).length;
+    if (!entries.length) {
+      list.innerHTML = '<div class="empty-entries">No entries yet. Submit a transaction to see it here.</div>';
+      return;
+    }
+    list.innerHTML = entries.map(e => `
+      <div class="entry-card ${e.deleted ? 'deleted' : ''}">
+        ${!e.deleted ? `<button class="delete-btn" onclick="deleteEntry(${e.id},${e.row},'${e.enteredBy}')" title="Mark as deleted">✕</button>` : ''}
+        <div class="entry-top">
+          <div class="entry-meta">
+            <strong>${e.date}</strong>${e.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}<br>
+            ${e.shop} · ${e.enteredBy}
+          </div>
+          <div class="entry-amount">Rs ${fmtAmt(e.amount)}</div>
+        </div>
+        <div class="entry-tags">
+          <span class="tag">${e.type}</span>
+          <span class="tag">${e.activity}</span>
+          <span class="tag">${e.paymentMode}</span>
+        </div>
+        <div class="entry-flow"><span>${e.paidBy}</span> → <span>${e.paidTo}</span></div>
+        ${e.details ? `<div class="entry-details">${e.details}</div>` : ''}
+      </div>
+    `).join('');
+  }
+</script>
+</body>
+</html>
