@@ -381,6 +381,41 @@
       margin-left: 6px; vertical-align: middle; text-transform: uppercase;
     }
     .empty-entries { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+    .receipt-link {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--primary-light);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .receipt-link:active { text-decoration: underline; }
+
+    /* ── File Upload ── */
+    .file-upload-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 14px;
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      background: #FAFBFF;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--muted);
+      transition: border-color 0.18s, background 0.18s;
+      user-select: none;
+    }
+    .file-upload-label:active { border-color: var(--border-focus); background: #EEF2FF; }
+    .file-upload-label.has-file { border-color: var(--success); color: var(--success); background: #F0FDF4; }
+    .file-icon { font-size: 18px; flex-shrink: 0; }
+    #billFile { display: none; }
+    .file-chosen {
+      margin-top: 5px;
+      font-size: 11px;
+      color: var(--success);
+      word-break: break-all;
+    }
 
     /* ── Toast ── */
     .toast {
@@ -510,8 +545,8 @@
         <div class="row-2">
           <div class="field">
             <label for="paidTo">Name <span class="req">*</span></label>
-            <select id="paidTo" class="loading"><option value="">Loading…</option></select>
-            <div class="err-msg" id="e-paidTo">Select a name</div>
+            <input type="text" id="paidTo" placeholder="Enter name…" autocomplete="off">
+            <div class="err-msg" id="e-paidTo">Enter a name</div>
           </div>
           <div class="field">
             <label for="paidToType">Type <span class="req">*</span></label>
@@ -560,6 +595,15 @@
         <div class="field">
           <label for="remarks">Remarks <span class="opt">(optional)</span></label>
           <textarea id="remarks" placeholder="Any additional notes…" style="height:60px;"></textarea>
+        </div>
+        <div class="field">
+          <label>Receipt / Bill <span class="opt">(optional)</span></label>
+          <label class="file-upload-label" for="billFile">
+            <span class="file-icon">📎</span>
+            <span id="filePickerText">Tap to attach photo or PDF</span>
+          </label>
+          <input type="file" id="billFile" accept="image/*,.pdf">
+          <div class="file-chosen" id="fileChosen"></div>
         </div>
       </div>
 
@@ -688,7 +732,7 @@
     document.getElementById('loadBanner').classList.remove('hidden');
     document.getElementById('errBanner').style.display = 'none';
     document.getElementById('submitBtn').disabled = true;
-    const dynIds = ['shop','enteredBy','type','activity','paidTo','paidBy','paidToType','paidByType'];
+    const dynIds = ['shop','enteredBy','type','activity','paidBy','paidToType','paidByType'];
     dynIds.forEach(id => {
       const s = document.getElementById(id);
       s.classList.add('loading');
@@ -710,7 +754,6 @@
       fillSelect('shop',       keys['SHOPS']);
       fillSelect('type',       keys['TRANS_TYPES']);
       fillSelect('activity',   keys['ACTIVITIES']);
-      fillSelect('paidTo',     keys['PARTIES']);
       fillSelect('paidBy',     keys['PARTIES']);
       fillSelect('paidToType', keys['PERSON_TYPES']);
       fillSelect('paidByType', keys['PERSON_TYPES']);
@@ -780,7 +823,52 @@
     document.getElementById('enteredBy').value = eb;
     if (eb) document.getElementById('enteredByHint').classList.add('show');
     document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
+    document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
+    document.getElementById('fileChosen').textContent     = '';
+    document.querySelector('.file-upload-label').classList.remove('has-file');
     REQUIRED.forEach(clearErr);
+  }
+
+  // ── File upload listener ─────────────────────────────────────────────────────
+  document.getElementById('billFile').addEventListener('change', function() {
+    const f   = this.files[0];
+    const lbl = document.querySelector('.file-upload-label');
+    if (f) {
+      document.getElementById('filePickerText').textContent = 'Change file';
+      document.getElementById('fileChosen').textContent     = '✓ ' + f.name;
+      lbl.classList.add('has-file');
+    } else {
+      document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
+      document.getElementById('fileChosen').textContent     = '';
+      lbl.classList.remove('has-file');
+    }
+  });
+
+  // ── Upload file to Google Drive via Apps Script doPost ────────────────────────
+  function uploadReceipt(file, folderName) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        const base64 = ev.target.result.split(',')[1];
+        try {
+          const resp = await fetch(SCRIPT_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'text/plain' },   // avoids CORS preflight
+            body: JSON.stringify({
+              action:     'uploadFile',
+              folderName: folderName,
+              fileName:   file.name,
+              mimeType:   file.type || 'application/octet-stream',
+              base64:     base64
+            })
+          });
+          const json = await resp.json();
+          resolve(json);
+        } catch(err) { reject(err); }
+      };
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.readAsDataURL(file);
+    });
   }
 
   document.getElementById('form').addEventListener('submit', async e => {
@@ -795,15 +883,44 @@
       type:        document.getElementById('type').value,
       activity:    document.getElementById('activity').value,
       details:     document.getElementById('details').value.trim(),
-      paidTo:      document.getElementById('paidTo').value,
+      paidTo:      document.getElementById('paidTo').value.trim(),
       paidToType:  document.getElementById('paidToType').value,
       paidBy:      document.getElementById('paidBy').value,
       paidByType:  document.getElementById('paidByType').value,
       amount:      document.getElementById('amount').value,
       paymentMode: document.getElementById('paymentMode').value,
       remarks:     document.getElementById('remarks').value.trim(),
-      enteredBy:   document.getElementById('enteredBy').value
+      enteredBy:   document.getElementById('enteredBy').value,
+      fileUrl:     ''
     };
+
+    // Upload receipt first if one was chosen
+    const billFile = document.getElementById('billFile').files[0];
+    if (billFile) {
+      btn.innerHTML = '<span class="spinner"></span>Uploading receipt…';
+      const now = new Date();
+      const ts  = now.getFullYear() +
+        String(now.getMonth()+1).padStart(2,'0') +
+        String(now.getDate()).padStart(2,'0') + '_' +
+        String(now.getHours()).padStart(2,'0') +
+        String(now.getMinutes()).padStart(2,'0') +
+        String(now.getSeconds()).padStart(2,'0');
+      const folderName = (ts + '_' + payload.type + '_' + payload.paidBy)
+        .replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 80);
+      try {
+        btn.innerHTML = '<span class="spinner"></span>Uploading receipt…';
+        const up = await uploadReceipt(billFile, folderName);
+        if (up.status === 'success') {
+          payload.fileUrl = up.fileUrl;
+        } else {
+          toast('⚠ Receipt not saved: ' + (up.message || 'upload failed'), 'fail');
+        }
+      } catch(upErr) {
+        toast('⚠ Receipt upload failed — submitting without it', 'fail');
+      }
+    }
+
+    btn.innerHTML = '<span class="spinner"></span>Submitting…';
     try {
       const json = await jsonp(payload);
       if (json.status === 'success') {
@@ -876,6 +993,7 @@
         </div>
         <div class="entry-flow"><span>${e.paidBy}</span> → <span>${e.paidTo}</span></div>
         ${e.details ? `<div class="entry-details">${e.details}</div>` : ''}
+        ${e.fileUrl ? `<a class="receipt-link" href="${e.fileUrl}" target="_blank">📎 View Receipt</a>` : ''}
       </div>
     `).join('');
   }
