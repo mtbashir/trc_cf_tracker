@@ -1,854 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>TRC CF Tracker</title>
-  <style>
-    :root {
-      --primary:       #1A237E;
-      --primary-mid:   #283593;
-      --primary-light: #3949AB;
-      --bg:            #ECEEF6;
-      --card:          #FFFFFF;
-      --text:          #1C1C1E;
-      --muted:         #6B7280;
-      --border:        #CBD5E1;
-      --border-focus:  #3949AB;
-      --error:         #DC2626;
-      --success:       #15803D;
-      --radius:        10px;
-      --shadow:        0 1px 4px rgba(0,0,0,0.08);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100dvh;
-      -webkit-tap-highlight-color: transparent;
-    }
+var SHEET_ID     = '1Kji9gYmcxIOpoqXmsICwJT46BUKVYn7x5mgldWgpYns';
+var SHEET_NAME   = 'Sheet1';
+var KEYS_NAME    = 'KEYS';
+var PRIVATE_KEYS = ['USER', 'PASSWORD'];
+// Columns that exist in Sheet1 but are hidden from the form.
+// Update this list if you rename these columns.
+var SYSTEM_COLS  = ['Deleted', 'Receipt URL'];
 
-    /* ── Login ── */
-    #loginScreen {
-      position: fixed; inset: 0;
-      background: var(--primary);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 24px; z-index: 200;
-    }
-    .login-brand { text-align: center; color: #fff; margin-bottom: 28px; }
-    .login-icon {
-      width: 60px; height: 60px;
-      background: rgba(255,255,255,0.15); border-radius: 16px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; margin: 0 auto 12px;
-    }
-    .login-brand h1 { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
-    .login-brand p  { font-size: 13px; opacity: 0.7; margin-top: 4px; }
-    .login-card {
-      width: 100%; max-width: 360px;
-      background: #fff; border-radius: 16px;
-      padding: 28px 24px 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    }
-    .login-card label { display: block; font-size: 12px; font-weight: 600; color: var(--primary-mid); margin-bottom: 5px; }
-    .login-card input {
-      width: 100%; padding: 12px 14px;
-      border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 16px; outline: none; color: var(--text);
-      transition: border-color 0.18s;
-    }
-    .login-card input:focus { border-color: var(--border-focus); }
-    .login-gap { height: 14px; }
-    .login-err {
-      margin-top: 12px; padding: 10px 12px;
-      background: #FEF2F2; border: 1px solid #FECACA;
-      border-radius: 8px; font-size: 13px; color: var(--error);
-    }
-    .btn-login {
-      width: 100%; margin-top: 18px; padding: 14px;
-      background: var(--primary); color: #fff;
-      border: none; border-radius: 10px;
-      font-size: 16px; font-weight: 700; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      letter-spacing: 0.4px;
-    }
-    .btn-login:disabled { background: var(--muted); cursor: not-allowed; }
+function doGet(e) {
+  var params = e.parameter, callback = params.callback || '', result;
+  if      (params.action === 'schema') result = getSchema();
+  else if (params.action === 'keys')   result = getKeysData();
+  else if (params.action === 'login')  result = loginUser(params);
+  else if (params.action === 'delete') result = deleteTransaction(params);
+  else                                 result = submitTransactionData(params);
+  var json = JSON.stringify(result);
+  if (callback) return ContentService.createTextOutput(callback+'('+json+')').setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
 
-    /* ── Header ── */
-    header {
-      background: var(--primary); color: #fff;
-      padding: 12px 16px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 50;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-    }
-    header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
-    header p  { font-size: 11px; opacity: 0.7; margin-top: 1px; }
-    .logout-btn {
-      background: rgba(255,255,255,0.15); color: #fff;
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 8px; padding: 6px 12px;
-      font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
-    }
-    .logout-btn:active { background: rgba(255,255,255,0.25); }
+function doPost(e) {
+  var data;
+  try { data = JSON.parse(e.postData.contents); }
+  catch(err) { return respond({status:'error', message:'Invalid JSON'}); }
+  if (data.action === 'uploadFile') return respond(uploadFileToDrive(data));
+  return respond({status:'error', message:'Unknown action'});
+}
 
-    /* ── Layout ── */
-    .wrap { max-width: 520px; margin: 0 auto; padding: 14px 14px 40px; }
+function respond(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
 
-    /* ── Banners ── */
-    #loadBanner {
-      display: flex; align-items: center; gap: 10px;
-      background: #EEF2FF; border: 1px solid #C7D2FE;
-      border-radius: var(--radius); padding: 12px 14px;
-      margin-bottom: 12px; font-size: 13px;
-      color: var(--primary-mid); font-weight: 500;
-    }
-    #loadBanner.hidden { display: none; }
-    #errBanner {
-      display: none; background: #FEF2F2;
-      border: 1px solid #FECACA; border-radius: var(--radius);
-      padding: 14px; margin-bottom: 12px;
-      font-size: 13px; color: var(--error);
-    }
-    #errBanner strong { display: block; margin-bottom: 6px; font-size: 14px; }
-    #errBanner .err-steps { color: #7F1D1D; line-height: 1.7; font-size: 12px; }
-    #errBanner .err-detail { margin-top: 6px; font-size: 12px; color: #991B1B; word-break: break-word; }
-    #errBanner button {
-      margin-top: 10px; padding: 7px 16px;
-      border: 1.5px solid var(--error); border-radius: 6px;
-      background: transparent; color: var(--error);
-      font-size: 13px; font-weight: 600; cursor: pointer;
-    }
+// Returns Sheet1 column headers (excluding Timestamp col A and SYSTEM_COLS)
+function getSchema() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sh = ss.getSheetByName(SHEET_NAME);
+    if (!sh) return {status:'error', message:'Sheet1 not found'};
+    var lastCol = sh.getLastColumn();
+    if (!lastCol) return {status:'error', message:'Sheet1 has no columns'};
+    var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
 
-    /* ── Cards ── */
-    .card {
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
-    }
-    .card-title {
-      font-size: 10px; font-weight: 800;
-      text-transform: uppercase; letter-spacing: 1.2px;
-      color: var(--primary-light);
-      margin-bottom: 14px; padding-bottom: 8px;
-      border-bottom: 1px solid var(--bg);
-    }
-
-    /* ── Fields ── */
-    .field { margin-bottom: 14px; }
-    .field:last-child { margin-bottom: 0; }
-    label {
-      display: block; font-size: 12px; font-weight: 600;
-      color: var(--primary-mid); margin-bottom: 5px;
-    }
-    label .req { color: var(--error); margin-left: 1px; }
-    label .opt { color: var(--muted); font-weight: 400; }
-
-    input[type="date"], input[type="number"], input[type="text"],
-    input[type="email"], input[type="password"], select, textarea {
-      width: 100%; padding: 12px 13px;
-      border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 15px; color: var(--text); background: #FAFBFF;
-      outline: none;
-      transition: border-color 0.18s, box-shadow 0.18s;
-      -webkit-appearance: none; appearance: none;
-    }
-    select {
-      padding-right: 36px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 12px center;
-      cursor: pointer;
-    }
-    .amount-input {
-      font-size: 22px !important; font-weight: 700;
-      color: var(--primary); padding: 14px 13px;
-      letter-spacing: 0.5px;
-    }
-    textarea { resize: none; height: 76px; line-height: 1.5; }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(57,73,171,0.12);
-      background: #fff;
-    }
-    input.invalid, select.invalid, textarea.invalid {
-      border-color: var(--error); background: #FFF8F8;
-    }
-    .err-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
-    .err-msg.show { display: block; }
-
-    /* ── Submit ── */
-    .btn-submit {
-      width: 100%; padding: 15px;
-      background: var(--primary); color: #fff;
-      border: none; border-radius: var(--radius);
-      font-size: 16px; font-weight: 700; letter-spacing: 0.4px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 3px 10px rgba(26,35,126,0.35);
-      transition: background 0.18s, transform 0.1s;
-    }
-    .btn-submit:active:not(:disabled) { transform: scale(0.98); }
-    .btn-submit:disabled { background: var(--muted); box-shadow: none; cursor: not-allowed; }
-
-    /* ── Spinners ── */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2.5px solid rgba(255,255,255,0.35);
-      border-top-color: #fff; border-radius: 50%;
-      animation: spin 0.65s linear infinite; flex-shrink: 0;
-    }
-    .spinner.dark {
-      border-color: rgba(26,35,126,0.2); border-top-color: var(--primary);
-      width: 14px; height: 14px;
-    }
-
-    /* ── File Upload ── */
-    .file-upload-label {
-      display: flex; align-items: center; gap: 10px;
-      padding: 13px 14px;
-      border: 1.5px dashed var(--border); border-radius: 8px;
-      background: #FAFBFF; cursor: pointer;
-      font-size: 14px; color: var(--muted);
-      transition: border-color 0.18s, background 0.18s;
-      user-select: none;
-    }
-    .file-upload-label:active { border-color: var(--border-focus); background: #EEF2FF; }
-    .file-upload-label.has-file { border-color: var(--success); color: var(--success); background: #F0FDF4; }
-    .file-icon { font-size: 18px; flex-shrink: 0; }
-    #billFile { display: none; }
-    .file-chosen { margin-top: 5px; font-size: 11px; color: var(--success); word-break: break-all; }
-
-    /* ── Entries ── */
-    .entries-header {
-      display: flex; align-items: center; gap: 8px;
-      margin: 20px 0 10px;
-      font-size: 13px; font-weight: 700; color: var(--primary-mid);
-      text-transform: uppercase; letter-spacing: 0.8px;
-    }
-    .badge {
-      background: var(--primary); color: #fff;
-      border-radius: 100px; font-size: 11px; font-weight: 700;
-      padding: 1px 7px; min-width: 20px; text-align: center;
-    }
-    .entry-card {
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 14px;
-      margin-bottom: 10px; position: relative;
-      transition: opacity 0.2s;
-    }
-    .entry-card.deleted { opacity: 0.45; }
-    .entry-top {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 8px; margin-bottom: 8px;
-    }
-    .entry-meta { font-size: 11px; color: var(--muted); line-height: 1.6; }
-    .entry-meta strong { color: var(--text); font-size: 13px; }
-    .entry-amount { font-size: 20px; font-weight: 800; color: var(--primary); white-space: nowrap; }
-    .entry-fields { margin-top: 4px; }
-    .entry-kv {
-      display: flex; justify-content: space-between;
-      align-items: baseline; gap: 8px;
-      font-size: 12px; padding: 4px 0;
-      border-bottom: 1px solid var(--bg);
-    }
-    .entry-kv:last-child { border-bottom: none; }
-    .entry-k { color: var(--muted); font-weight: 500; flex-shrink: 0; }
-    .entry-v { color: var(--text); font-weight: 600; text-align: right; word-break: break-word; max-width: 65%; }
-    .delete-btn {
-      position: absolute; top: 12px; right: 12px;
-      background: none; border: none;
-      color: #CBD5E1; font-size: 16px;
-      cursor: pointer; padding: 4px; line-height: 1;
-      transition: color 0.15s;
-    }
-    .delete-btn:active { color: var(--error); }
-    .deleted-badge {
-      display: inline-block; font-size: 10px; font-weight: 700;
-      color: var(--error); background: #FEE2E2;
-      border-radius: 4px; padding: 2px 6px; margin-left: 6px;
-      vertical-align: middle; text-transform: uppercase;
-    }
-    .empty-entries { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
-    .receipt-link {
-      display: inline-block; margin-top: 6px;
-      font-size: 12px; color: var(--primary-light);
-      text-decoration: none; font-weight: 600;
-    }
-    .receipt-link:active { text-decoration: underline; }
-
-    /* ── Toast ── */
-    .toast {
-      position: fixed; bottom: 28px; left: 50%;
-      transform: translateX(-50%) translateY(90px);
-      padding: 12px 22px; border-radius: 100px;
-      font-size: 14px; font-weight: 600; color: #fff;
-      z-index: 999;
-      transition: transform 0.32s cubic-bezier(.34,1.56,.64,1), opacity 0.2s;
-      opacity: 0; white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-      pointer-events: none;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    .toast.ok   { background: var(--success); }
-    .toast.fail { background: var(--error); }
-  </style>
-</head>
-<body>
-
-<!-- ══ LOGIN ══ -->
-<div id="loginScreen">
-  <div class="login-brand">
-    <div class="login-icon">₨</div>
-    <h1>TRC CF Tracker</h1>
-    <p>Cash Flow Management</p>
-  </div>
-  <div class="login-card">
-    <div class="field">
-      <label for="loginUser">Username</label>
-      <input type="text" id="loginUser" placeholder="Enter your username"
-             autocapitalize="none" autocomplete="username">
-    </div>
-    <div class="login-gap"></div>
-    <div class="field">
-      <label for="loginPass">Password</label>
-      <input type="password" id="loginPass" placeholder="Enter your password"
-             autocomplete="current-password">
-    </div>
-    <div id="loginErr" class="login-err" style="display:none;"></div>
-    <button class="btn-login" id="loginBtn">Login</button>
-  </div>
-</div>
-
-<!-- ══ MAIN APP ══ -->
-<div id="appScreen" style="display:none;">
-  <header>
-    <div>
-      <h1>TRC CF Tracker</h1>
-      <p>New Transaction</p>
-    </div>
-    <button class="logout-btn" id="logoutBtn">
-      <span id="headerUser"></span> · Logout
-    </button>
-  </header>
-
-  <div class="wrap">
-
-    <div id="loadBanner">
-      <span class="spinner dark"></span>
-      Loading form from sheet…
-    </div>
-
-    <div id="errBanner">
-      <strong>Could not load form</strong>
-      <div class="err-steps">
-        1. Check that <b>Sheet1</b> has column headers in row 1<br>
-        2. Check that the <b>KEYS</b> tab exists in your Google Sheet<br>
-        3. Make sure Apps Script is deployed as a <b>New version</b>
-      </div>
-      <div class="err-detail" id="errDetail"></div>
-      <button onclick="loadSchemaAndKeys()">↺ Retry</button>
-    </div>
-
-    <form id="form" novalidate>
-
-      <!-- Dynamic fields injected here -->
-      <div class="card" id="fieldsCard" style="display:none;">
-        <div class="card-title">Transaction Details</div>
-        <div id="dynamicFields"></div>
-      </div>
-
-      <!-- Receipt upload — always shown after fields -->
-      <div class="card" id="uploadCard" style="display:none;">
-        <div class="card-title">Attachment</div>
-        <div class="field">
-          <label>Receipt / Bill <span class="opt">(optional)</span></label>
-          <label class="file-upload-label" for="billFile">
-            <span class="file-icon">📎</span>
-            <span id="filePickerText">Tap to attach photo or PDF</span>
-          </label>
-          <input type="file" id="billFile" accept="image/*,.pdf">
-          <div class="file-chosen" id="fileChosen"></div>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit" id="submitBtn" disabled>
-        Submit Transaction
-      </button>
-    </form>
-
-    <div class="entries-header">
-      <span>My Entries</span>
-      <span class="badge" id="entriesCount">0</span>
-    </div>
-    <div id="entriesList"></div>
-
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-  const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxlETGLSls6bxAvy1811cExWg6L-YMZYmaYFTFwHrwLORvxia_uOxd_5Ya8q2jvyOVw/exec';
-  const ENTRIES_KEY = 'trc_entries_v3';   // v3 = dynamic-schema format
-  const USER_KEY    = 'trc_last_user';
-
-  let schemaFields   = [];  // [{name, colIndex, optional}, ...]
-  let keysData       = {};  // {ColumnName: [val1, val2, ...], ...}
-  let optionalFields = new Set();
-  let currentUser    = '';
-
-  // ── JSONP ──────────────────────────────────────────────────────────────────
-  function jsonp(params, ms) {
-    return new Promise((resolve, reject) => {
-      const cb    = '_cb' + Date.now() + Math.floor(Math.random() * 1e6);
-      const sc    = document.createElement('script');
-      const timer = setTimeout(() => { cleanup(); reject(new Error('Request timed out')); }, ms || 20000);
-      function cleanup() { clearTimeout(timer); delete window[cb]; sc.parentNode && sc.parentNode.removeChild(sc); }
-      window[cb] = d => { cleanup(); resolve(d); };
-      sc.onerror = () => { cleanup(); reject(new Error('Network error — could not reach Apps Script.')); };
-      sc.src = SCRIPT_URL + '?' + new URLSearchParams(Object.assign({}, params, { callback: cb }));
-      document.head.appendChild(sc);
-    });
-  }
-
-  // ── Toast ──────────────────────────────────────────────────────────────────
-  let toastTimer;
-  function toast(msg, type) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className   = 'toast ' + (type || '');
-    clearTimeout(toastTimer);
-    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
-    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
-  }
-
-  // ── Field-type helpers ─────────────────────────────────────────────────────
-  function isDateField    (n) { return /date/i.test(n); }
-  function isNumberField  (n) { return /amount|price|cost|total|qty|quantity/i.test(n); }
-  function isTextareaField(n) { return /details|remarks|notes|description|comment|reason|purpose|narration/i.test(n); }
-  function isEnteredByFld (n) { return /entered.?by|entry.?by/i.test(n); }
-
-  function escH(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-  function fmtAmt(v) {
-    const n = parseFloat(v);
-    return isNaN(n) ? String(v) : n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
-  }
-
-  // ══ LOGIN ════════════════════════════════════════════════════════════════
-  (function() {
-    const cur = sessionStorage.getItem('trc_user');
-    if (cur) { launchApp(cur); return; }
-    const last = localStorage.getItem(USER_KEY);
-    if (last) document.getElementById('loginUser').value = last;
-  })();
-
-  function doLogin() {
-    const user = document.getElementById('loginUser').value.trim();
-    const pass = document.getElementById('loginPass').value.trim();
-    const btn  = document.getElementById('loginBtn');
-    const err  = document.getElementById('loginErr');
-    if (!user || !pass) { showLoginErr('Enter both username and password.'); return; }
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Verifying…';
-    err.style.display = 'none';
-    jsonp({ action: 'login', user, password: pass }, 15000)
-      .then(json => {
-        if (json.status === 'success') {
-          sessionStorage.setItem('trc_user', json.user);
-          localStorage.setItem(USER_KEY, json.user);
-          launchApp(json.user);
-        } else {
-          showLoginErr(json.message || 'Login failed.');
-          btn.disabled = false; btn.textContent = 'Login';
+    // Check KEYS for _SYSTEM overrides
+    var systemCols = SYSTEM_COLS.slice();
+    var ks = ss.getSheetByName(KEYS_NAME);
+    if (ks) {
+      var kd = ks.getDataRange().getValues();
+      if (kd.length) {
+        var kh = kd[0].map(String);
+        var si = kh.indexOf('_SYSTEM');
+        if (si >= 0) {
+          var sv = kd.slice(1).map(function(r){ return String(r[si]||'').trim(); }).filter(Boolean);
+          if (sv.length) systemCols = sv;
         }
-      })
-      .catch(e => { showLoginErr(e.message); btn.disabled = false; btn.textContent = 'Login'; });
-  }
-
-  function showLoginErr(msg) {
-    const e = document.getElementById('loginErr');
-    e.textContent = msg; e.style.display = 'block';
-  }
-
-  function launchApp(user) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appScreen').style.display   = 'block';
-    document.getElementById('headerUser').textContent    = user;
-    initApp(user);
-  }
-
-  function doLogout() { sessionStorage.removeItem('trc_user'); location.reload(); }
-
-  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-  document.getElementById('loginBtn').addEventListener('click', doLogin);
-  document.getElementById('logoutBtn').addEventListener('click', doLogout);
-
-  // ══ APP INIT ═════════════════════════════════════════════════════════════
-  function initApp(user) {
-    currentUser = user;
-    renderEntries();
-    loadSchemaAndKeys(user);
-  }
-
-  async function loadSchemaAndKeys(user) {
-    document.getElementById('loadBanner').classList.remove('hidden');
-    document.getElementById('errBanner').style.display  = 'none';
-    document.getElementById('fieldsCard').style.display = 'none';
-    document.getElementById('uploadCard').style.display = 'none';
-    document.getElementById('submitBtn').disabled = true;
-
-    try {
-      // Load schema (Sheet1 headers) and keys (dropdown lists) in parallel
-      const [schemaRes, keysRes] = await Promise.all([
-        jsonp({ action: 'schema' }),
-        jsonp({ action: 'keys'   })
-      ]);
-
-      if (schemaRes.status !== 'success') throw new Error('Schema: ' + schemaRes.message);
-      if (keysRes.status   !== 'success') throw new Error('Keys: '   + keysRes.message);
-      if (!schemaRes.fields || !schemaRes.fields.length)
-        throw new Error('Sheet1 has no column headers. Add headers to row 1.');
-
-      schemaFields   = schemaRes.fields;
-      keysData       = keysRes.data || {};
-      optionalFields = new Set(keysData['_OPTIONAL'] || []);
-
-      buildForm(user || currentUser);
-
-      document.getElementById('loadBanner').classList.add('hidden');
-      document.getElementById('fieldsCard').style.display = '';
-      document.getElementById('uploadCard').style.display = '';
-      document.getElementById('submitBtn').disabled = false;
-    } catch (err) {
-      document.getElementById('loadBanner').classList.add('hidden');
-      document.getElementById('errBanner').style.display = 'block';
-      document.getElementById('errDetail').textContent   = 'Error: ' + err.message;
-    }
-  }
-
-  // ── Build form dynamically from schema ────────────────────────────────────
-  function buildForm(user) {
-    const container  = document.getElementById('dynamicFields');
-    container.innerHTML = '';
-    const loggedUser = user || sessionStorage.getItem('trc_user') || '';
-
-    schemaFields.forEach(field => {
-      const { name, colIndex } = field;
-      const values   = (keysData[name] || []).filter(Boolean);
-      const optional = optionalFields.has(name);
-      const fid      = `f_${colIndex}`;
-
-      // ── Create the appropriate input element ──
-      let el;
-      if (values.length) {
-        // Dropdown — KEYS has values for this column name
-        el = document.createElement('select');
-        const blank = document.createElement('option');
-        blank.value = ''; blank.textContent = '— select —';
-        el.appendChild(blank);
-        values.forEach(v => {
-          const o = document.createElement('option');
-          o.value = o.textContent = v;
-          el.appendChild(o);
-        });
-        // Auto-set "Entered By"-style fields from the logged-in username
-        if (isEnteredByFld(name)) {
-          const match = Array.from(el.options)
-            .find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
-          if (match) el.value = match.value;
-        }
-      } else if (isDateField(name)) {
-        el = document.createElement('input');
-        el.type  = 'date';
-        el.value = new Date().toLocaleDateString('en-CA');
-      } else if (isNumberField(name)) {
-        el = document.createElement('input');
-        el.type        = 'number';
-        el.step        = 'any';
-        el.inputMode   = 'decimal';
-        el.placeholder = '0.00';
-        el.classList.add('amount-input');
-      } else if (isTextareaField(name)) {
-        el = document.createElement('textarea');
-        el.placeholder = 'Enter ' + name.toLowerCase() + '…';
-      } else {
-        el = document.createElement('input');
-        el.type         = 'text';
-        el.placeholder  = 'Enter ' + name.toLowerCase() + '…';
-        el.autocomplete = 'off';
-      }
-
-      el.id               = fid;
-      el.dataset.fieldName = name;
-      el.dataset.required  = optional ? '' : 'true';
-
-      // ── Label ──
-      const label = document.createElement('label');
-      label.setAttribute('for', fid);
-      label.innerHTML = escH(name) +
-        (optional ? ' <span class="opt">(optional)</span>' : ' <span class="req">*</span>');
-
-      // ── Error hint ──
-      const errEl = document.createElement('div');
-      errEl.className   = 'err-msg';
-      errEl.id          = `e_${colIndex}`;
-      errEl.textContent = values.length ? `Select ${name}` : `Enter ${name}`;
-
-      // ── Wrapper ──
-      const div = document.createElement('div');
-      div.className = 'field';
-      div.appendChild(label);
-      div.appendChild(el);
-      div.appendChild(errEl);
-      container.appendChild(div);
-
-      // Clear validation on interaction
-      ['change', 'input'].forEach(ev => {
-        el.addEventListener(ev, () => {
-          el.classList.remove('invalid');
-          errEl.classList.remove('show');
-        });
-      });
-    });
-  }
-
-  // ── Validation ─────────────────────────────────────────────────────────────
-  function validate() {
-    let ok = true;
-    schemaFields.forEach(({ name, colIndex }) => {
-      const el = document.getElementById(`f_${colIndex}`);
-      if (!el || el.dataset.required !== 'true') return;
-      const val = el.value.trim();
-      const bad = !val || (isNumberField(name) && isNaN(parseFloat(val)));
-      if (bad) {
-        el.classList.add('invalid');
-        const errEl = document.getElementById(`e_${colIndex}`);
-        if (errEl) errEl.classList.add('show');
-        if (ok) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        ok = false;
-      }
-    });
-    return ok;
-  }
-
-  // ── Reset form ─────────────────────────────────────────────────────────────
-  function resetForm() {
-    schemaFields.forEach(({ name, colIndex }) => {
-      const el = document.getElementById(`f_${colIndex}`);
-      if (!el) return;
-      if (isDateField(name)) {
-        el.value = new Date().toLocaleDateString('en-CA');
-      } else if (isEnteredByFld(name) && el.tagName === 'SELECT') {
-        // Keep the Entered By value
-      } else {
-        el.value = '';
-      }
-      el.classList.remove('invalid');
-      const errEl = document.getElementById(`e_${colIndex}`);
-      if (errEl) errEl.classList.remove('show');
-    });
-    // Reset file
-    document.getElementById('billFile').value            = '';
-    document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
-    document.getElementById('fileChosen').textContent     = '';
-    const lbl = document.querySelector('.file-upload-label');
-    if (lbl) lbl.classList.remove('has-file');
-  }
-
-  // ── File upload listener ───────────────────────────────────────────────────
-  document.getElementById('billFile').addEventListener('change', function () {
-    const f   = this.files[0];
-    const lbl = document.querySelector('.file-upload-label');
-    if (f) {
-      document.getElementById('filePickerText').textContent = 'Change file';
-      document.getElementById('fileChosen').textContent     = '✓ ' + f.name;
-      if (lbl) lbl.classList.add('has-file');
-    } else {
-      document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
-      document.getElementById('fileChosen').textContent     = '';
-      if (lbl) lbl.classList.remove('has-file');
-    }
-  });
-
-  // ── Upload receipt to Drive via Apps Script doPost ─────────────────────────
-  function uploadReceipt(file, folderName) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async ev => {
-        const base64 = ev.target.result.split(',')[1];
-        try {
-          const resp = await fetch(SCRIPT_URL, {
-            method:  'POST',
-            headers: { 'Content-Type': 'text/plain' },  // avoids CORS preflight
-            body: JSON.stringify({
-              action:     'uploadFile',
-              folderName: folderName,
-              fileName:   file.name,
-              mimeType:   file.type || 'application/octet-stream',
-              base64:     base64
-            })
-          });
-          resolve(await resp.json());
-        } catch (err) { reject(err); }
-      };
-      reader.onerror = () => reject(new Error('Could not read file'));
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // ── Submit ─────────────────────────────────────────────────────────────────
-  document.getElementById('form').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-
-    // Collect all values keyed by their column header name
-    const payload = {};
-    schemaFields.forEach(({ name, colIndex }) => {
-      const el = document.getElementById(`f_${colIndex}`);
-      if (!el) return;
-      let val = el.value.trim();
-      // Convert date to DD-MM-YYYY for the sheet
-      if (el.type === 'date' && val) {
-        const [y, m, d] = val.split('-');
-        val = `${d}-${m}-${y}`;
-      }
-      payload[name] = val;
-    });
-
-    // Handle receipt upload
-    const billFile = document.getElementById('billFile').files[0];
-    let   fileUrl  = '';
-    if (billFile) {
-      btn.innerHTML = '<span class="spinner"></span>Uploading receipt…';
-      const now = new Date();
-      const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-      const typeF   = schemaFields.find(f => /^type$/i.test(f.name) || /trans.*type|type.*trans/i.test(f.name));
-      const paidByF = schemaFields.find(f => /paid.?by/i.test(f.name));
-      const parts   = [ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
-      const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
-      try {
-        const up = await uploadReceipt(billFile, folder || ts);
-        if (up.status === 'success') {
-          fileUrl = up.fileUrl;
-          // Save under whatever column the sheet calls it (auto-detect or fall back)
-          const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
-          payload[receiptCol ? receiptCol.name : 'Receipt URL'] = fileUrl;
-        } else {
-          toast('⚠ Receipt not saved: ' + up.message, 'fail');
-        }
-      } catch (upErr) {
-        toast('⚠ Receipt upload failed — submitting without it', 'fail');
       }
     }
 
-    btn.innerHTML = '<span class="spinner"></span>Submitting…';
-    try {
-      const json = await jsonp(payload);
-      if (json.status === 'success') {
-        const entry = {
-          id:      Date.now(),
-          row:     json.row,
-          deleted: false,
-          fileUrl: fileUrl,
-          fields:  schemaFields.map(f => ({ name: f.name, value: payload[f.name] || '' }))
-        };
-        saveEntry(entry);
-        toast('✓ Transaction recorded!', 'ok');
-        resetForm();
-      } else {
-        toast('⚠ ' + (json.message || 'Unknown error'), 'fail');
-      }
-    } catch (err) {
-      toast('✗ ' + err.message, 'fail');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Submit Transaction';
+    var fields = [];
+    headers.forEach(function(h, i) {
+      var name = h.trim();
+      if (i === 0) return;                         // always skip col A (Timestamp)
+      if (!name) return;                            // skip blank headers
+      if (systemCols.indexOf(name) >= 0) return;   // skip system columns
+      fields.push({ name: name, colIndex: i });
+    });
+    return { status:'success', fields: fields };
+  } catch(err) { return {status:'error', message:err.toString()}; }
+}
+
+// Returns all KEYS data except USER/PASSWORD
+function getKeysData() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ks = ss.getSheetByName(KEYS_NAME);
+    if (!ks) return {status:'error', message:'KEYS sheet not found'};
+    var data = ks.getDataRange().getValues();
+    if (!data.length) return {status:'error', message:'KEYS sheet is empty'};
+    var headers = data[0].map(String), out = {};
+    headers.forEach(function(h, i) {
+      if (PRIVATE_KEYS.indexOf(h) >= 0) return;
+      out[h] = data.slice(1).map(function(r){ return String(r[i]||'').trim(); }).filter(Boolean);
+    });
+    return { status:'success', data: out };
+  } catch(err) { return {status:'error', message:err.toString()}; }
+}
+
+function loginUser(params) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ks = ss.getSheetByName(KEYS_NAME);
+    if (!ks) return {status:'error', message:'KEYS sheet not found'};
+    var data = ks.getDataRange().getValues(), hdrs = data[0].map(String);
+    var uCol = hdrs.indexOf('USER'), pCol = hdrs.indexOf('PASSWORD');
+    if (uCol<0||pCol<0) return {status:'error', message:'USER/PASSWORD columns missing in KEYS'};
+    var u = (params.user||'').trim().toLowerCase(), p = (params.password||'').trim();
+    for (var i=1; i<data.length; i++) {
+      if (String(data[i][uCol]).trim().toLowerCase()===u && String(data[i][pCol]).trim()===p)
+        return {status:'success', user:String(data[i][uCol]).trim()};
     }
-  });
+    return {status:'error', message:'Invalid username or password.'};
+  } catch(err) { return {status:'error', message:err.toString()}; }
+}
 
-  // ══ ENTRIES ══════════════════════════════════════════════════════════════
-  function getEntries() {
-    try { return JSON.parse(localStorage.getItem(ENTRIES_KEY) || '[]'); } catch { return []; }
-  }
+// Writes a row to Sheet1 by matching submitted field names to column headers
+function submitTransactionData(params) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sh = ss.getSheetByName(SHEET_NAME);
+    if (!sh) return {status:'error', message:'Sheet1 not found'};
+    var lastCol = sh.getLastColumn();
+    var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    var row = headers.map(function(h, i) {
+      if (i === 0) return new Date();              // Timestamp — always col A
+      var name = h.trim();
+      return (params[name] !== undefined) ? params[name] : '';
+    });
+    sh.appendRow(row);
+    return { status:'success', row: sh.getLastRow() };
+  } catch(err) { return {status:'error', message:err.toString()}; }
+}
 
-  function saveEntry(entry) {
-    const entries = getEntries();
-    entries.unshift(entry);
-    if (entries.length > 100) entries.length = 100;
-    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-    renderEntries();
-  }
+// Finds the "Deleted" column by name (works even if column moves)
+function deleteTransaction(params) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sh = ss.getSheetByName(SHEET_NAME);
+    if (!sh) return {status:'error', message:'Sheet1 not found'};
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    var delCol  = -1;
+    headers.forEach(function(h, i) { if (h.trim() === 'Deleted') delCol = i; });
+    if (delCol < 0) return {status:'error', message:'"Deleted" column not found in Sheet1 headers'};
+    var row = parseInt(params.row, 10);
+    if (!row || row < 2) return {status:'error', message:'Invalid row number'};
+    sh.getRange(row, delCol+1).setValue('DELETED by '+(params.enteredBy||'?')+' at '+new Date().toLocaleString());
+    return { status:'success' };
+  } catch(err) { return {status:'error', message:err.toString()}; }
+}
 
-  function markDeleted(id) {
-    const entries = getEntries();
-    const idx = entries.findIndex(e => e.id === id);
-    if (idx !== -1) { entries[idx].deleted = true; localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); }
-    renderEntries();
-  }
-
-  async function deleteEntry(id, row, enteredBy) {
-    if (!confirm('Mark this record as deleted in the sheet?')) return;
-    try {
-      const json = await jsonp({ action: 'delete', row, enteredBy });
-      if (json.status === 'success') { markDeleted(id); toast('Record marked as deleted', 'ok'); }
-      else toast('⚠ ' + json.message, 'fail');
-    } catch (err) { toast('✗ ' + err.message, 'fail'); }
-  }
-
-  function renderEntries() {
-    const entries = getEntries();
-    const list    = document.getElementById('entriesList');
-    const count   = document.getElementById('entriesCount');
-    count.textContent = entries.filter(e => !e.deleted).length;
-
-    if (!entries.length) {
-      list.innerHTML = '<div class="empty-entries">No entries yet. Submit a transaction to see it here.</div>';
-      return;
-    }
-
-    list.innerHTML = entries.map(entry => {
-      const fields     = entry.fields || [];
-      const dateF      = fields.find(f => isDateField(f.name)   && f.value);
-      const amtF       = fields.find(f => isNumberField(f.name) && f.value);
-      const entByF     = fields.find(f => isEnteredByFld(f.name) && f.value);
-      // All other fields (skip date and amount as they're shown in header)
-      const bodyFields = fields.filter(f => f !== dateF && f !== amtF && f.value);
-      const enteredBy  = entByF ? entByF.value : '';
-
-      return `
-        <div class="entry-card ${entry.deleted ? 'deleted' : ''}">
-          ${!entry.deleted ? `<button class="delete-btn" onclick="deleteEntry(${entry.id},${entry.row},'${enteredBy.replace(/'/g,"\\'")}')" title="Mark as deleted">✕</button>` : ''}
-          <div class="entry-top">
-            <div class="entry-meta">
-              ${dateF  ? `<strong>${escH(dateF.value)}</strong>` : ''}
-              ${entry.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}
-              ${entByF ? `<br>${escH(entByF.value)}` : ''}
-            </div>
-            ${amtF ? `<div class="entry-amount">Rs ${fmtAmt(amtF.value)}</div>` : ''}
-          </div>
-          <div class="entry-fields">
-            ${bodyFields.filter(f => f !== entByF).map(f => `
-              <div class="entry-kv">
-                <span class="entry-k">${escH(f.name)}</span>
-                <span class="entry-v">${escH(f.value)}</span>
-              </div>
-            `).join('')}
-          </div>
-          ${entry.fileUrl ? `<a class="receipt-link" href="${escH(entry.fileUrl)}" target="_blank">📎 View Receipt</a>` : ''}
-        </div>
-      `;
-    }).join('');
-  }
-</script>
-</body>
-</html>
+function uploadFileToDrive(data) {
+  try {
+    var parentName = 'TRC CF Tracker Receipts';
+    var parents = DriveApp.getFoldersByName(parentName);
+    var parent  = parents.hasNext() ? parents.next() : DriveApp.createFolder(parentName);
+    var sub     = parent.createFolder(data.folderName);
+    var bytes   = Utilities.base64Decode(data.base64);
+    var blob    = Utilities.newBlob(bytes, data.mimeType || 'application/octet-stream', data.fileName);
+    var file    = sub.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return { status:'success', fileUrl: file.getUrl(), fileId: file.getId() };
+  } catch(err) { return {status:'error', message:err.toString()}; }
+}
