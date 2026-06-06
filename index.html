@@ -20,7 +20,6 @@
       --border-focus:  #3949AB;
       --error:         #DC2626;
       --success:       #15803D;
-      --amber:         #D97706;
       --radius:        10px;
       --shadow:        0 1px 4px rgba(0,0,0,0.08);
     }
@@ -33,226 +32,140 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ── Login Screen ── */
+    /* ── Login ── */
     #loginScreen {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: var(--primary);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; z-index: 200;
     }
-    .login-brand {
-      text-align: center;
-      color: #fff;
-      margin-bottom: 28px;
-    }
+    .login-brand { text-align: center; color: #fff; margin-bottom: 28px; }
     .login-icon {
       width: 60px; height: 60px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 16px;
+      background: rgba(255,255,255,0.15); border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 28px;
-      margin: 0 auto 12px;
+      font-size: 28px; margin: 0 auto 12px;
     }
     .login-brand h1 { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
     .login-brand p  { font-size: 13px; opacity: 0.7; margin-top: 4px; }
     .login-card {
-      width: 100%;
-      max-width: 360px;
-      background: #fff;
-      border-radius: 16px;
+      width: 100%; max-width: 360px;
+      background: #fff; border-radius: 16px;
       padding: 28px 24px 24px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
-    .login-card label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--primary-mid);
-      margin-bottom: 5px;
-    }
+    .login-card label { display: block; font-size: 12px; font-weight: 600; color: var(--primary-mid); margin-bottom: 5px; }
     .login-card input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 16px;
-      outline: none;
-      color: var(--text);
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 16px; outline: none; color: var(--text);
       transition: border-color 0.18s;
     }
     .login-card input:focus { border-color: var(--border-focus); }
     .login-gap { height: 14px; }
     .login-err {
-      margin-top: 12px;
-      padding: 10px 12px;
-      background: #FEF2F2;
-      border: 1px solid #FECACA;
-      border-radius: 8px;
-      font-size: 13px;
-      color: var(--error);
+      margin-top: 12px; padding: 10px 12px;
+      background: #FEF2F2; border: 1px solid #FECACA;
+      border-radius: 8px; font-size: 13px; color: var(--error);
     }
     .btn-login {
-      width: 100%;
-      margin-top: 18px;
-      padding: 14px;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      width: 100%; margin-top: 18px; padding: 14px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
       letter-spacing: 0.4px;
     }
     .btn-login:disabled { background: var(--muted); cursor: not-allowed; }
 
     /* ── Header ── */
     header {
-      background: var(--primary);
-      color: #fff;
+      background: var(--primary); color: #fff;
       padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
       box-shadow: 0 2px 10px rgba(0,0,0,0.25);
     }
     header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
     header p  { font-size: 11px; opacity: 0.7; margin-top: 1px; }
     .logout-btn {
-      background: rgba(255,255,255,0.15);
-      color: #fff;
+      background: rgba(255,255,255,0.15); color: #fff;
       border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
+      border-radius: 8px; padding: 6px 12px;
+      font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
     }
     .logout-btn:active { background: rgba(255,255,255,0.25); }
 
     /* ── Layout ── */
-    .wrap {
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 14px 14px 40px;
-    }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 14px 14px 40px; }
 
     /* ── Banners ── */
     #loadBanner {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #EEF2FF;
-      border: 1px solid #C7D2FE;
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 12px;
-      font-size: 13px;
-      color: var(--primary-mid);
-      font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      background: #EEF2FF; border: 1px solid #C7D2FE;
+      border-radius: var(--radius); padding: 12px 14px;
+      margin-bottom: 12px; font-size: 13px;
+      color: var(--primary-mid); font-weight: 500;
     }
     #loadBanner.hidden { display: none; }
     #errBanner {
-      display: none;
-      background: #FEF2F2;
-      border: 1px solid #FECACA;
-      border-radius: var(--radius);
-      padding: 14px;
-      margin-bottom: 12px;
-      font-size: 13px;
-      color: var(--error);
+      display: none; background: #FEF2F2;
+      border: 1px solid #FECACA; border-radius: var(--radius);
+      padding: 14px; margin-bottom: 12px;
+      font-size: 13px; color: var(--error);
     }
     #errBanner strong { display: block; margin-bottom: 6px; font-size: 14px; }
-    #errBanner .err-steps { color: #7F1D1D; line-height: 1.6; }
+    #errBanner .err-steps { color: #7F1D1D; line-height: 1.7; font-size: 12px; }
     #errBanner .err-detail { margin-top: 6px; font-size: 12px; color: #991B1B; word-break: break-word; }
     #errBanner button {
-      margin-top: 10px;
-      padding: 7px 16px;
-      border: 1.5px solid var(--error);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--error);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
+      margin-top: 10px; padding: 7px 16px;
+      border: 1.5px solid var(--error); border-radius: 6px;
+      background: transparent; color: var(--error);
+      font-size: 13px; font-weight: 600; cursor: pointer;
     }
 
     /* ── Cards ── */
     .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px;
-      margin-bottom: 12px;
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
     }
     .card-title {
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
+      font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 1.2px;
       color: var(--primary-light);
-      margin-bottom: 14px;
-      padding-bottom: 8px;
+      margin-bottom: 14px; padding-bottom: 8px;
       border-bottom: 1px solid var(--bg);
     }
 
     /* ── Fields ── */
     .field { margin-bottom: 14px; }
     .field:last-child { margin-bottom: 0; }
-    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
     label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--primary-mid);
-      margin-bottom: 5px;
+      display: block; font-size: 12px; font-weight: 600;
+      color: var(--primary-mid); margin-bottom: 5px;
     }
     label .req { color: var(--error); margin-left: 1px; }
     label .opt { color: var(--muted); font-weight: 400; }
 
-    .remembered-hint { font-size: 11px; color: var(--success); margin-top: 4px; display: none; }
-    .remembered-hint.show { display: block; }
-
     input[type="date"], input[type="number"], input[type="text"],
     input[type="email"], input[type="password"], select, textarea {
-      width: 100%;
-      padding: 12px 13px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font-size: 15px;
-      color: var(--text);
-      background: #FAFBFF;
+      width: 100%; padding: 12px 13px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 15px; color: var(--text); background: #FAFBFF;
       outline: none;
       transition: border-color 0.18s, box-shadow 0.18s;
-      -webkit-appearance: none;
-      appearance: none;
+      -webkit-appearance: none; appearance: none;
     }
     select {
       padding-right: 36px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
+      background-repeat: no-repeat; background-position: right 12px center;
       cursor: pointer;
     }
-    #amount {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--primary);
-      padding: 14px 13px;
+    .amount-input {
+      font-size: 22px !important; font-weight: 700;
+      color: var(--primary); padding: 14px 13px;
       letter-spacing: 0.5px;
     }
     textarea { resize: none; height: 76px; line-height: 1.5; }
@@ -262,37 +175,19 @@
       background: #fff;
     }
     input.invalid, select.invalid, textarea.invalid {
-      border-color: var(--error);
-      background: #FFF8F8;
+      border-color: var(--error); background: #FFF8F8;
     }
-    select.loading {
-      color: transparent;
-      background-color: #E8EAF6;
-      background-image: none;
-      border-color: #C5CAE9;
-      pointer-events: none;
-      animation: shimmer 1.4s infinite;
-    }
-    @keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.45} }
     .err-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
     .err-msg.show { display: block; }
 
     /* ── Submit ── */
     .btn-submit {
-      width: 100%;
-      padding: 15px;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.4px;
+      width: 100%; padding: 15px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 700; letter-spacing: 0.4px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
       box-shadow: 0 3px 10px rgba(26,35,126,0.35);
       transition: background 0.18s, transform 0.1s;
     }
@@ -304,68 +199,66 @@
     .spinner {
       width: 18px; height: 18px;
       border: 2.5px solid rgba(255,255,255,0.35);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.65s linear infinite;
-      flex-shrink: 0;
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.65s linear infinite; flex-shrink: 0;
     }
     .spinner.dark {
-      border-color: rgba(26,35,126,0.2);
-      border-top-color: var(--primary);
+      border-color: rgba(26,35,126,0.2); border-top-color: var(--primary);
       width: 14px; height: 14px;
     }
 
+    /* ── File Upload ── */
+    .file-upload-label {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 14px;
+      border: 1.5px dashed var(--border); border-radius: 8px;
+      background: #FAFBFF; cursor: pointer;
+      font-size: 14px; color: var(--muted);
+      transition: border-color 0.18s, background 0.18s;
+      user-select: none;
+    }
+    .file-upload-label:active { border-color: var(--border-focus); background: #EEF2FF; }
+    .file-upload-label.has-file { border-color: var(--success); color: var(--success); background: #F0FDF4; }
+    .file-icon { font-size: 18px; flex-shrink: 0; }
+    #billFile { display: none; }
+    .file-chosen { margin-top: 5px; font-size: 11px; color: var(--success); word-break: break-all; }
+
     /* ── Entries ── */
     .entries-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex; align-items: center; gap: 8px;
       margin: 20px 0 10px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--primary-mid);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
+      font-size: 13px; font-weight: 700; color: var(--primary-mid);
+      text-transform: uppercase; letter-spacing: 0.8px;
     }
     .badge {
-      background: var(--primary);
-      color: #fff;
-      border-radius: 100px;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 1px 7px;
-      min-width: 20px;
-      text-align: center;
+      background: var(--primary); color: #fff;
+      border-radius: 100px; font-size: 11px; font-weight: 700;
+      padding: 1px 7px; min-width: 20px; text-align: center;
     }
     .entry-card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px;
-      margin-bottom: 10px;
-      position: relative;
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 14px;
+      margin-bottom: 10px; position: relative;
       transition: opacity 0.2s;
     }
     .entry-card.deleted { opacity: 0.45; }
     .entry-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 8px;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 8px; margin-bottom: 8px;
     }
-    .entry-meta { font-size: 11px; color: var(--muted); line-height: 1.5; }
-    .entry-meta strong { color: var(--text); font-size: 12px; }
+    .entry-meta { font-size: 11px; color: var(--muted); line-height: 1.6; }
+    .entry-meta strong { color: var(--text); font-size: 13px; }
     .entry-amount { font-size: 20px; font-weight: 800; color: var(--primary); white-space: nowrap; }
-    .entry-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
-    .tag {
-      font-size: 11px; font-weight: 600;
-      padding: 2px 8px; border-radius: 100px;
-      background: #EEF2FF; color: var(--primary-light);
+    .entry-fields { margin-top: 4px; }
+    .entry-kv {
+      display: flex; justify-content: space-between;
+      align-items: baseline; gap: 8px;
+      font-size: 12px; padding: 4px 0;
+      border-bottom: 1px solid var(--bg);
     }
-    .entry-flow { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .entry-flow span { color: var(--text); font-weight: 500; }
-    .entry-details { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-kv:last-child { border-bottom: none; }
+    .entry-k { color: var(--muted); font-weight: 500; flex-shrink: 0; }
+    .entry-v { color: var(--text); font-weight: 600; text-align: right; word-break: break-word; max-width: 65%; }
     .delete-btn {
       position: absolute; top: 12px; right: 12px;
       background: none; border: none;
@@ -377,45 +270,16 @@
     .deleted-badge {
       display: inline-block; font-size: 10px; font-weight: 700;
       color: var(--error); background: #FEE2E2;
-      border-radius: 4px; padding: 2px 6px;
-      margin-left: 6px; vertical-align: middle; text-transform: uppercase;
+      border-radius: 4px; padding: 2px 6px; margin-left: 6px;
+      vertical-align: middle; text-transform: uppercase;
     }
     .empty-entries { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
     .receipt-link {
-      display: inline-block;
-      margin-top: 6px;
-      font-size: 12px;
-      color: var(--primary-light);
-      text-decoration: none;
-      font-weight: 600;
+      display: inline-block; margin-top: 6px;
+      font-size: 12px; color: var(--primary-light);
+      text-decoration: none; font-weight: 600;
     }
     .receipt-link:active { text-decoration: underline; }
-
-    /* ── File Upload ── */
-    .file-upload-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 13px 14px;
-      border: 1.5px dashed var(--border);
-      border-radius: 8px;
-      background: #FAFBFF;
-      cursor: pointer;
-      font-size: 14px;
-      color: var(--muted);
-      transition: border-color 0.18s, background 0.18s;
-      user-select: none;
-    }
-    .file-upload-label:active { border-color: var(--border-focus); background: #EEF2FF; }
-    .file-upload-label.has-file { border-color: var(--success); color: var(--success); background: #F0FDF4; }
-    .file-icon { font-size: 18px; flex-shrink: 0; }
-    #billFile { display: none; }
-    .file-chosen {
-      margin-top: 5px;
-      font-size: 11px;
-      color: var(--success);
-      word-break: break-all;
-    }
 
     /* ── Toast ── */
     .toast {
@@ -476,126 +340,31 @@
 
     <div id="loadBanner">
       <span class="spinner dark"></span>
-      Loading options from sheet…
+      Loading form from sheet…
     </div>
 
     <div id="errBanner">
-      <strong>Could not load dropdown options</strong>
+      <strong>Could not load form</strong>
       <div class="err-steps">
-        1. Apps Script redeployed as <b>New version</b>?<br>
-        2. <b>KEYS</b> tab exists in your Google Sheet?<br>
-        3. KEYS columns: PARTIES, PERSON_TYPES, TRANS_TYPES, SHOPS, ENTERED_BY, ACTIVITIES, USER, PASSWORD
+        1. Check that <b>Sheet1</b> has column headers in row 1<br>
+        2. Check that the <b>KEYS</b> tab exists in your Google Sheet<br>
+        3. Make sure Apps Script is deployed as a <b>New version</b>
       </div>
       <div class="err-detail" id="errDetail"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-        <button onclick="loadKeys()">↺ Retry</button>
-        <button onclick="testScript()" style="border-color:var(--primary);color:var(--primary);">⧉ Test Script</button>
-      </div>
+      <button onclick="loadSchemaAndKeys()">↺ Retry</button>
     </div>
 
     <form id="form" novalidate>
 
-      <div class="card">
-        <div class="card-title">Shop</div>
-        <div class="field">
-          <label for="shop">Select Shop <span class="req">*</span></label>
-          <select id="shop" class="loading"><option value="">Loading…</option></select>
-          <div class="err-msg" id="e-shop">Select a shop</div>
-        </div>
+      <!-- Dynamic fields injected here -->
+      <div class="card" id="fieldsCard" style="display:none;">
+        <div class="card-title">Transaction Details</div>
+        <div id="dynamicFields"></div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Entered By</div>
-        <div class="field">
-          <label for="enteredBy">Select Person <span class="req">*</span></label>
-          <select id="enteredBy" class="loading"><option value="">Loading…</option></select>
-          <div class="remembered-hint" id="enteredByHint">✓ Auto-set from login</div>
-          <div class="err-msg" id="e-enteredBy">Select who is entering this record</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Transaction Info</div>
-        <div class="row-2">
-          <div class="field">
-            <label for="date">Date <span class="req">*</span></label>
-            <input type="date" id="date">
-            <div class="err-msg" id="e-date">Select a date</div>
-          </div>
-          <div class="field">
-            <label for="type">Type <span class="req">*</span></label>
-            <select id="type" class="loading"><option value="">Loading…</option></select>
-            <div class="err-msg" id="e-type">Select a type</div>
-          </div>
-        </div>
-        <div class="field">
-          <label for="activity">Activity <span class="req">*</span></label>
-          <select id="activity" class="loading"><option value="">Loading…</option></select>
-          <div class="err-msg" id="e-activity">Select an activity</div>
-        </div>
-        <div class="field">
-          <label for="details">Details <span class="req">*</span></label>
-          <textarea id="details" placeholder="Describe the transaction…"></textarea>
-          <div class="err-msg" id="e-details">Enter transaction details</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Paid To</div>
-        <div class="row-2">
-          <div class="field">
-            <label for="paidTo">Name <span class="req">*</span></label>
-            <input type="text" id="paidTo" placeholder="Enter name…" autocomplete="off">
-            <div class="err-msg" id="e-paidTo">Enter a name</div>
-          </div>
-          <div class="field">
-            <label for="paidToType">Type <span class="req">*</span></label>
-            <select id="paidToType" class="loading"><option value="">Loading…</option></select>
-            <div class="err-msg" id="e-paidToType">Select a type</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Paid By</div>
-        <div class="row-2">
-          <div class="field">
-            <label for="paidBy">Name <span class="req">*</span></label>
-            <select id="paidBy" class="loading"><option value="">Loading…</option></select>
-            <div class="err-msg" id="e-paidBy">Select a name</div>
-          </div>
-          <div class="field">
-            <label for="paidByType">Type <span class="req">*</span></label>
-            <select id="paidByType" class="loading"><option value="">Loading…</option></select>
-            <div class="err-msg" id="e-paidByType">Select a type</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Payment Details</div>
-        <div class="field">
-          <label for="amount">Amount <span class="req">*</span></label>
-          <input type="number" id="amount" placeholder="0.00" step="any" inputmode="decimal">
-          <div class="err-msg" id="e-amount">Enter a valid amount</div>
-        </div>
-        <div class="field">
-          <label for="paymentMode">Payment Mode <span class="req">*</span></label>
-          <select id="paymentMode">
-            <option value="">— select —</option>
-            <option>Cash</option>
-            <option>Bank BAL</option>
-            <option>Bank ABL</option>
-            <option>Bank JC</option>
-            <option>Bank ASK</option>
-            <option>Bank MCB</option>
-          </select>
-          <div class="err-msg" id="e-paymentMode">Select a payment mode</div>
-        </div>
-        <div class="field">
-          <label for="remarks">Remarks <span class="opt">(optional)</span></label>
-          <textarea id="remarks" placeholder="Any additional notes…" style="height:60px;"></textarea>
-        </div>
+      <!-- Receipt upload — always shown after fields -->
+      <div class="card" id="uploadCard" style="display:none;">
+        <div class="card-title">Attachment</div>
         <div class="field">
           <label>Receipt / Bill <span class="opt">(optional)</span></label>
           <label class="file-upload-label" for="billFile">
@@ -625,10 +394,15 @@
 
 <script>
   const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxlETGLSls6bxAvy1811cExWg6L-YMZYmaYFTFwHrwLORvxia_uOxd_5Ya8q2jvyOVw/exec';
-  const ENTRIES_KEY = 'trc_entries_v2';
+  const ENTRIES_KEY = 'trc_entries_v3';   // v3 = dynamic-schema format
   const USER_KEY    = 'trc_last_user';
 
-  // ── JSONP ────────────────────────────────────────────────────────────────────
+  let schemaFields   = [];  // [{name, colIndex, optional}, ...]
+  let keysData       = {};  // {ColumnName: [val1, val2, ...], ...}
+  let optionalFields = new Set();
+  let currentUser    = '';
+
+  // ── JSONP ──────────────────────────────────────────────────────────────────
   function jsonp(params, ms) {
     return new Promise((resolve, reject) => {
       const cb    = '_cb' + Date.now() + Math.floor(Math.random() * 1e6);
@@ -642,23 +416,38 @@
     });
   }
 
-  // ── Toast ────────────────────────────────────────────────────────────────────
+  // ── Toast ──────────────────────────────────────────────────────────────────
   let toastTimer;
   function toast(msg, type) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = 'toast ' + type;
+    t.className   = 'toast ' + (type || '');
     clearTimeout(toastTimer);
     requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
     toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
   }
 
-  // ══ LOGIN ══
-  const currentUser = sessionStorage.getItem('trc_user');
-  if (currentUser) launchApp(currentUser);
+  // ── Field-type helpers ─────────────────────────────────────────────────────
+  function isDateField    (n) { return /date/i.test(n); }
+  function isNumberField  (n) { return /amount|price|cost|total|qty|quantity/i.test(n); }
+  function isTextareaField(n) { return /details|remarks|notes|description|comment|reason|purpose|narration/i.test(n); }
+  function isEnteredByFld (n) { return /entered.?by|entry.?by/i.test(n); }
 
-  const lastUser = localStorage.getItem(USER_KEY);
-  if (lastUser) document.getElementById('loginUser').value = lastUser;
+  function escH(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmtAmt(v) {
+    const n = parseFloat(v);
+    return isNaN(n) ? String(v) : n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+
+  // ══ LOGIN ════════════════════════════════════════════════════════════════
+  (function() {
+    const cur = sessionStorage.getItem('trc_user');
+    if (cur) { launchApp(cur); return; }
+    const last = localStorage.getItem(USER_KEY);
+    if (last) document.getElementById('loginUser').value = last;
+  })();
 
   function doLogin() {
     const user = document.getElementById('loginUser').value.trim();
@@ -677,136 +466,171 @@
           launchApp(json.user);
         } else {
           showLoginErr(json.message || 'Login failed.');
-          btn.disabled = false;
-          btn.textContent = 'Login';
+          btn.disabled = false; btn.textContent = 'Login';
         }
       })
-      .catch(e => {
-        showLoginErr(e.message);
-        btn.disabled = false;
-        btn.textContent = 'Login';
-      });
+      .catch(e => { showLoginErr(e.message); btn.disabled = false; btn.textContent = 'Login'; });
   }
 
   function showLoginErr(msg) {
     const e = document.getElementById('loginErr');
-    e.textContent = msg;
-    e.style.display = 'block';
+    e.textContent = msg; e.style.display = 'block';
   }
 
   function launchApp(user) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appScreen').style.display   = 'block';
-    document.getElementById('headerUser').textContent     = user;
+    document.getElementById('headerUser').textContent    = user;
     initApp(user);
   }
 
-  function doLogout() {
-    sessionStorage.removeItem('trc_user');
-    location.reload();
-  }
+  function doLogout() { sessionStorage.removeItem('trc_user'); location.reload(); }
 
   document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('loginBtn').addEventListener('click', doLogin);
   document.getElementById('logoutBtn').addEventListener('click', doLogout);
 
-  // ══ APP INIT ══
+  // ══ APP INIT ═════════════════════════════════════════════════════════════
   function initApp(user) {
-    document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
+    currentUser = user;
     renderEntries();
-    loadKeys(user);
+    loadSchemaAndKeys(user);
   }
 
-  function fillSelect(id, items) {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '<option value="">— select —</option>';
-    (items || []).forEach(v => {
-      const o = document.createElement('option');
-      o.value = o.textContent = v;
-      sel.appendChild(o);
-    });
-    sel.classList.remove('loading');
-  }
-
-  async function loadKeys(user) {
+  async function loadSchemaAndKeys(user) {
     document.getElementById('loadBanner').classList.remove('hidden');
-    document.getElementById('errBanner').style.display = 'none';
+    document.getElementById('errBanner').style.display  = 'none';
+    document.getElementById('fieldsCard').style.display = 'none';
+    document.getElementById('uploadCard').style.display = 'none';
     document.getElementById('submitBtn').disabled = true;
-    const dynIds = ['shop','enteredBy','type','activity','paidBy','paidToType','paidByType'];
-    dynIds.forEach(id => {
-      const s = document.getElementById(id);
-      s.classList.add('loading');
-      s.innerHTML = '<option value="">Loading…</option>';
-    });
+
     try {
-      const json = await jsonp({ action: 'keys' });
-      if (json.status !== 'success') throw new Error(json.message);
-      const keys   = json.data;
-      const needed = {
-        PARTIES: 'party names', PERSON_TYPES: 'person types',
-        TRANS_TYPES: 'transaction types', SHOPS: 'shop names',
-        ENTERED_BY: 'entered-by names', ACTIVITIES: 'activity types'
-      };
-      for (const [col, label] of Object.entries(needed)) {
-        if (!keys[col] || !keys[col].length)
-          throw new Error('"' + col + '" column missing or empty in KEYS sheet (' + label + ').');
-      }
-      fillSelect('shop',       keys['SHOPS']);
-      fillSelect('type',       keys['TRANS_TYPES']);
-      fillSelect('activity',   keys['ACTIVITIES']);
-      fillSelect('paidBy',     keys['PARTIES']);
-      fillSelect('paidToType', keys['PERSON_TYPES']);
-      fillSelect('paidByType', keys['PERSON_TYPES']);
-      fillSelect('enteredBy',  keys['ENTERED_BY']);
-      const eb = document.getElementById('enteredBy');
-      const loggedUser = user || sessionStorage.getItem('trc_user') || '';
-      const match = Array.from(eb.options).find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
-      if (match) {
-        eb.value = match.value;
-        document.getElementById('enteredByHint').classList.add('show');
-      }
+      // Load schema (Sheet1 headers) and keys (dropdown lists) in parallel
+      const [schemaRes, keysRes] = await Promise.all([
+        jsonp({ action: 'schema' }),
+        jsonp({ action: 'keys'   })
+      ]);
+
+      if (schemaRes.status !== 'success') throw new Error('Schema: ' + schemaRes.message);
+      if (keysRes.status   !== 'success') throw new Error('Keys: '   + keysRes.message);
+      if (!schemaRes.fields || !schemaRes.fields.length)
+        throw new Error('Sheet1 has no column headers. Add headers to row 1.');
+
+      schemaFields   = schemaRes.fields;
+      keysData       = keysRes.data || {};
+      optionalFields = new Set(keysData['_OPTIONAL'] || []);
+
+      buildForm(user || currentUser);
+
       document.getElementById('loadBanner').classList.add('hidden');
+      document.getElementById('fieldsCard').style.display = '';
+      document.getElementById('uploadCard').style.display = '';
       document.getElementById('submitBtn').disabled = false;
     } catch (err) {
       document.getElementById('loadBanner').classList.add('hidden');
       document.getElementById('errBanner').style.display = 'block';
-      document.getElementById('errDetail').textContent = 'Error: ' + err.message;
-      dynIds.forEach(id => {
-        const s = document.getElementById(id);
-        s.classList.remove('loading');
-        s.innerHTML = '<option value="">— unavailable —</option>';
-      });
+      document.getElementById('errDetail').textContent   = 'Error: ' + err.message;
     }
   }
 
-  function testScript() {
-    window.open(SCRIPT_URL + '?action=keys&callback=test', '_blank');
+  // ── Build form dynamically from schema ────────────────────────────────────
+  function buildForm(user) {
+    const container  = document.getElementById('dynamicFields');
+    container.innerHTML = '';
+    const loggedUser = user || sessionStorage.getItem('trc_user') || '';
+
+    schemaFields.forEach(field => {
+      const { name, colIndex } = field;
+      const values   = (keysData[name] || []).filter(Boolean);
+      const optional = optionalFields.has(name);
+      const fid      = `f_${colIndex}`;
+
+      // ── Create the appropriate input element ──
+      let el;
+      if (values.length) {
+        // Dropdown — KEYS has values for this column name
+        el = document.createElement('select');
+        const blank = document.createElement('option');
+        blank.value = ''; blank.textContent = '— select —';
+        el.appendChild(blank);
+        values.forEach(v => {
+          const o = document.createElement('option');
+          o.value = o.textContent = v;
+          el.appendChild(o);
+        });
+        // Auto-set "Entered By"-style fields from the logged-in username
+        if (isEnteredByFld(name)) {
+          const match = Array.from(el.options)
+            .find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
+          if (match) el.value = match.value;
+        }
+      } else if (isDateField(name)) {
+        el = document.createElement('input');
+        el.type  = 'date';
+        el.value = new Date().toLocaleDateString('en-CA');
+      } else if (isNumberField(name)) {
+        el = document.createElement('input');
+        el.type        = 'number';
+        el.step        = 'any';
+        el.inputMode   = 'decimal';
+        el.placeholder = '0.00';
+        el.classList.add('amount-input');
+      } else if (isTextareaField(name)) {
+        el = document.createElement('textarea');
+        el.placeholder = 'Enter ' + name.toLowerCase() + '…';
+      } else {
+        el = document.createElement('input');
+        el.type         = 'text';
+        el.placeholder  = 'Enter ' + name.toLowerCase() + '…';
+        el.autocomplete = 'off';
+      }
+
+      el.id               = fid;
+      el.dataset.fieldName = name;
+      el.dataset.required  = optional ? '' : 'true';
+
+      // ── Label ──
+      const label = document.createElement('label');
+      label.setAttribute('for', fid);
+      label.innerHTML = escH(name) +
+        (optional ? ' <span class="opt">(optional)</span>' : ' <span class="req">*</span>');
+
+      // ── Error hint ──
+      const errEl = document.createElement('div');
+      errEl.className   = 'err-msg';
+      errEl.id          = `e_${colIndex}`;
+      errEl.textContent = values.length ? `Select ${name}` : `Enter ${name}`;
+
+      // ── Wrapper ──
+      const div = document.createElement('div');
+      div.className = 'field';
+      div.appendChild(label);
+      div.appendChild(el);
+      div.appendChild(errEl);
+      container.appendChild(div);
+
+      // Clear validation on interaction
+      ['change', 'input'].forEach(ev => {
+        el.addEventListener(ev, () => {
+          el.classList.remove('invalid');
+          errEl.classList.remove('show');
+        });
+      });
+    });
   }
 
-  // ── Validation ────────────────────────────────────────────────────────────────
-  const REQUIRED = ['shop','enteredBy','date','type','activity','details','paidTo','paidToType','paidBy','paidByType','amount','paymentMode'];
-
-  function clearErr(id) {
-    document.getElementById(id).classList.remove('invalid');
-    const e = document.getElementById('e-' + id);
-    if (e) e.classList.remove('show');
-  }
-
-  REQUIRED.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) ['change','input'].forEach(ev => el.addEventListener(ev, () => clearErr(id)));
-  });
-
+  // ── Validation ─────────────────────────────────────────────────────────────
   function validate() {
     let ok = true;
-    REQUIRED.forEach(id => {
-      const el  = document.getElementById(id);
+    schemaFields.forEach(({ name, colIndex }) => {
+      const el = document.getElementById(`f_${colIndex}`);
+      if (!el || el.dataset.required !== 'true') return;
       const val = el.value.trim();
-      const bad = !val || (id === 'amount' && isNaN(parseFloat(val)));
+      const bad = !val || (isNumberField(name) && isNaN(parseFloat(val)));
       if (bad) {
         el.classList.add('invalid');
-        const e = document.getElementById('e-' + id);
-        if (e) e.classList.add('show');
+        const errEl = document.getElementById(`e_${colIndex}`);
+        if (errEl) errEl.classList.add('show');
         if (ok) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         ok = false;
       }
@@ -814,37 +638,46 @@
     return ok;
   }
 
-  function fmtDate(v) { const [y,m,d] = v.split('-'); return `${d}-${m}-${y}`; }
-  function fmtAmt(v)  { return parseFloat(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
-
+  // ── Reset form ─────────────────────────────────────────────────────────────
   function resetForm() {
-    const eb = document.getElementById('enteredBy').value;
-    document.getElementById('form').reset();
-    document.getElementById('enteredBy').value = eb;
-    if (eb) document.getElementById('enteredByHint').classList.add('show');
-    document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
+    schemaFields.forEach(({ name, colIndex }) => {
+      const el = document.getElementById(`f_${colIndex}`);
+      if (!el) return;
+      if (isDateField(name)) {
+        el.value = new Date().toLocaleDateString('en-CA');
+      } else if (isEnteredByFld(name) && el.tagName === 'SELECT') {
+        // Keep the Entered By value
+      } else {
+        el.value = '';
+      }
+      el.classList.remove('invalid');
+      const errEl = document.getElementById(`e_${colIndex}`);
+      if (errEl) errEl.classList.remove('show');
+    });
+    // Reset file
+    document.getElementById('billFile').value            = '';
     document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
     document.getElementById('fileChosen').textContent     = '';
-    document.querySelector('.file-upload-label').classList.remove('has-file');
-    REQUIRED.forEach(clearErr);
+    const lbl = document.querySelector('.file-upload-label');
+    if (lbl) lbl.classList.remove('has-file');
   }
 
-  // ── File upload listener ─────────────────────────────────────────────────────
-  document.getElementById('billFile').addEventListener('change', function() {
+  // ── File upload listener ───────────────────────────────────────────────────
+  document.getElementById('billFile').addEventListener('change', function () {
     const f   = this.files[0];
     const lbl = document.querySelector('.file-upload-label');
     if (f) {
       document.getElementById('filePickerText').textContent = 'Change file';
       document.getElementById('fileChosen').textContent     = '✓ ' + f.name;
-      lbl.classList.add('has-file');
+      if (lbl) lbl.classList.add('has-file');
     } else {
       document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
       document.getElementById('fileChosen').textContent     = '';
-      lbl.classList.remove('has-file');
+      if (lbl) lbl.classList.remove('has-file');
     }
   });
 
-  // ── Upload file to Google Drive via Apps Script doPost ────────────────────────
+  // ── Upload receipt to Drive via Apps Script doPost ─────────────────────────
   function uploadReceipt(file, folderName) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -853,7 +686,7 @@
         try {
           const resp = await fetch(SCRIPT_URL, {
             method:  'POST',
-            headers: { 'Content-Type': 'text/plain' },   // avoids CORS preflight
+            headers: { 'Content-Type': 'text/plain' },  // avoids CORS preflight
             body: JSON.stringify({
               action:     'uploadFile',
               folderName: folderName,
@@ -862,60 +695,58 @@
               base64:     base64
             })
           });
-          const json = await resp.json();
-          resolve(json);
-        } catch(err) { reject(err); }
+          resolve(await resp.json());
+        } catch (err) { reject(err); }
       };
       reader.onerror = () => reject(new Error('Could not read file'));
       reader.readAsDataURL(file);
     });
   }
 
+  // ── Submit ─────────────────────────────────────────────────────────────────
   document.getElementById('form').addEventListener('submit', async e => {
     e.preventDefault();
     if (!validate()) return;
+
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Submitting…';
-    const payload = {
-      date:        fmtDate(document.getElementById('date').value),
-      shop:        document.getElementById('shop').value,
-      type:        document.getElementById('type').value,
-      activity:    document.getElementById('activity').value,
-      details:     document.getElementById('details').value.trim(),
-      paidTo:      document.getElementById('paidTo').value.trim(),
-      paidToType:  document.getElementById('paidToType').value,
-      paidBy:      document.getElementById('paidBy').value,
-      paidByType:  document.getElementById('paidByType').value,
-      amount:      document.getElementById('amount').value,
-      paymentMode: document.getElementById('paymentMode').value,
-      remarks:     document.getElementById('remarks').value.trim(),
-      enteredBy:   document.getElementById('enteredBy').value,
-      fileUrl:     ''
-    };
 
-    // Upload receipt first if one was chosen
+    // Collect all values keyed by their column header name
+    const payload = {};
+    schemaFields.forEach(({ name, colIndex }) => {
+      const el = document.getElementById(`f_${colIndex}`);
+      if (!el) return;
+      let val = el.value.trim();
+      // Convert date to DD-MM-YYYY for the sheet
+      if (el.type === 'date' && val) {
+        const [y, m, d] = val.split('-');
+        val = `${d}-${m}-${y}`;
+      }
+      payload[name] = val;
+    });
+
+    // Handle receipt upload
     const billFile = document.getElementById('billFile').files[0];
+    let   fileUrl  = '';
     if (billFile) {
       btn.innerHTML = '<span class="spinner"></span>Uploading receipt…';
       const now = new Date();
-      const ts  = now.getFullYear() +
-        String(now.getMonth()+1).padStart(2,'0') +
-        String(now.getDate()).padStart(2,'0') + '_' +
-        String(now.getHours()).padStart(2,'0') +
-        String(now.getMinutes()).padStart(2,'0') +
-        String(now.getSeconds()).padStart(2,'0');
-      const folderName = (ts + '_' + payload.type + '_' + payload.paidBy)
-        .replace(/[^a-zA-Z0-9_\-]/g, '_').substring(0, 80);
+      const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+      const typeF   = schemaFields.find(f => /^type$/i.test(f.name) || /trans.*type|type.*trans/i.test(f.name));
+      const paidByF = schemaFields.find(f => /paid.?by/i.test(f.name));
+      const parts   = [ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
+      const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
       try {
-        btn.innerHTML = '<span class="spinner"></span>Uploading receipt…';
-        const up = await uploadReceipt(billFile, folderName);
+        const up = await uploadReceipt(billFile, folder || ts);
         if (up.status === 'success') {
-          payload.fileUrl = up.fileUrl;
+          fileUrl = up.fileUrl;
+          // Save under whatever column the sheet calls it (auto-detect or fall back)
+          const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
+          payload[receiptCol ? receiptCol.name : 'Receipt URL'] = fileUrl;
         } else {
-          toast('⚠ Receipt not saved: ' + (up.message || 'upload failed'), 'fail');
+          toast('⚠ Receipt not saved: ' + up.message, 'fail');
         }
-      } catch(upErr) {
+      } catch (upErr) {
         toast('⚠ Receipt upload failed — submitting without it', 'fail');
       }
     }
@@ -924,7 +755,14 @@
     try {
       const json = await jsonp(payload);
       if (json.status === 'success') {
-        saveEntry({ ...payload, row: json.row, id: Date.now(), deleted: false });
+        const entry = {
+          id:      Date.now(),
+          row:     json.row,
+          deleted: false,
+          fileUrl: fileUrl,
+          fields:  schemaFields.map(f => ({ name: f.name, value: payload[f.name] || '' }))
+        };
+        saveEntry(entry);
         toast('✓ Transaction recorded!', 'ok');
         resetForm();
       } else {
@@ -938,7 +776,7 @@
     }
   });
 
-  // ══ ENTRIES ══
+  // ══ ENTRIES ══════════════════════════════════════════════════════════════
   function getEntries() {
     try { return JSON.parse(localStorage.getItem(ENTRIES_KEY) || '[]'); } catch { return []; }
   }
@@ -972,30 +810,44 @@
     const list    = document.getElementById('entriesList');
     const count   = document.getElementById('entriesCount');
     count.textContent = entries.filter(e => !e.deleted).length;
+
     if (!entries.length) {
       list.innerHTML = '<div class="empty-entries">No entries yet. Submit a transaction to see it here.</div>';
       return;
     }
-    list.innerHTML = entries.map(e => `
-      <div class="entry-card ${e.deleted ? 'deleted' : ''}">
-        ${!e.deleted ? `<button class="delete-btn" onclick="deleteEntry(${e.id},${e.row},'${e.enteredBy}')" title="Mark as deleted">✕</button>` : ''}
-        <div class="entry-top">
-          <div class="entry-meta">
-            <strong>${e.date}</strong>${e.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}<br>
-            ${e.shop} · ${e.enteredBy}
+
+    list.innerHTML = entries.map(entry => {
+      const fields     = entry.fields || [];
+      const dateF      = fields.find(f => isDateField(f.name)   && f.value);
+      const amtF       = fields.find(f => isNumberField(f.name) && f.value);
+      const entByF     = fields.find(f => isEnteredByFld(f.name) && f.value);
+      // All other fields (skip date and amount as they're shown in header)
+      const bodyFields = fields.filter(f => f !== dateF && f !== amtF && f.value);
+      const enteredBy  = entByF ? entByF.value : '';
+
+      return `
+        <div class="entry-card ${entry.deleted ? 'deleted' : ''}">
+          ${!entry.deleted ? `<button class="delete-btn" onclick="deleteEntry(${entry.id},${entry.row},'${enteredBy.replace(/'/g,"\\'")}')" title="Mark as deleted">✕</button>` : ''}
+          <div class="entry-top">
+            <div class="entry-meta">
+              ${dateF  ? `<strong>${escH(dateF.value)}</strong>` : ''}
+              ${entry.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}
+              ${entByF ? `<br>${escH(entByF.value)}` : ''}
+            </div>
+            ${amtF ? `<div class="entry-amount">Rs ${fmtAmt(amtF.value)}</div>` : ''}
           </div>
-          <div class="entry-amount">Rs ${fmtAmt(e.amount)}</div>
+          <div class="entry-fields">
+            ${bodyFields.filter(f => f !== entByF).map(f => `
+              <div class="entry-kv">
+                <span class="entry-k">${escH(f.name)}</span>
+                <span class="entry-v">${escH(f.value)}</span>
+              </div>
+            `).join('')}
+          </div>
+          ${entry.fileUrl ? `<a class="receipt-link" href="${escH(entry.fileUrl)}" target="_blank">📎 View Receipt</a>` : ''}
         </div>
-        <div class="entry-tags">
-          <span class="tag">${e.type}</span>
-          <span class="tag">${e.activity}</span>
-          <span class="tag">${e.paymentMode}</span>
-        </div>
-        <div class="entry-flow"><span>${e.paidBy}</span> → <span>${e.paidTo}</span></div>
-        ${e.details ? `<div class="entry-details">${e.details}</div>` : ''}
-        ${e.fileUrl ? `<a class="receipt-link" href="${e.fileUrl}" target="_blank">📎 View Receipt</a>` : ''}
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 </script>
 </body>
