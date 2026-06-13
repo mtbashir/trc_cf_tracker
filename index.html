@@ -292,6 +292,7 @@
       text-decoration: none; font-weight: 600;
     }
     .receipt-link:active { text-decoration: underline; }
+    .receipt-links { display: flex; flex-wrap: wrap; gap: 10px; }
 
     /* ── Toast ── */
     .toast {
@@ -383,7 +384,7 @@
             <span class="file-icon">📎</span>
             <span id="filePickerText">Tap to attach photo or PDF</span>
           </label>
-          <input type="file" id="billFile" accept="image/*,.pdf">
+          <input type="file" id="billFile" accept="image/*,.pdf" multiple>
           <div class="file-chosen" id="fileChosen"></div>
         </div>
       </div>
@@ -786,11 +787,13 @@
 
   // ── File upload listener ───────────────────────────────────────────────────
   document.getElementById('billFile').addEventListener('change', function () {
-    const f   = this.files[0];
-    const lbl = document.querySelector('.file-upload-label');
-    if (f) {
-      document.getElementById('filePickerText').textContent = 'Change file';
-      document.getElementById('fileChosen').textContent     = '✓ ' + f.name;
+    const files = this.files;
+    const lbl   = document.querySelector('.file-upload-label');
+    if (files && files.length) {
+      document.getElementById('filePickerText').textContent = 'Change files';
+      document.getElementById('fileChosen').textContent     = files.length === 1
+        ? '✓ ' + files[0].name
+        : `✓ ${files.length} files selected`;
       if (lbl) lbl.classList.add('has-file');
     } else {
       document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
@@ -851,29 +854,33 @@
     const recordId = await reserveId();
     payload['ID'] = String(recordId);
 
-    // Handle receipt upload
-    const billFile = document.getElementById('billFile').files[0];
-    let   fileUrl  = '';
-    if (billFile) {
-      btn.innerHTML = '<span class="spinner"></span>Uploading receipt…';
+    // Handle receipt upload(s)
+    const billFiles = Array.from(document.getElementById('billFile').files || []);
+    if (billFiles.length) {
       const now = new Date();
       const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
       const typeF   = schemaFields.find(f => /^type$/i.test(f.name) || /trans.*type|type.*trans/i.test(f.name));
       const paidByF = schemaFields.find(f => /paid.?by/i.test(f.name));
       const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
       const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
-      try {
-        const up = await uploadReceipt(billFile, folder || ts);
-        if (up.status === 'success') {
-          fileUrl = up.fileUrl;
-          // Save under whatever column the sheet calls it (auto-detect or fall back)
-          const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
-          payload[receiptCol ? receiptCol.name : 'Receipt URL'] = fileUrl;
-        } else {
-          toast('⚠ Receipt not saved: ' + up.message, 'fail');
+      const fileUrls = [];
+      for (let i = 0; i < billFiles.length; i++) {
+        btn.innerHTML = `<span class="spinner"></span>Uploading attachment ${i+1} of ${billFiles.length}…`;
+        try {
+          const up = await uploadReceipt(billFiles[i], folder || ts);
+          if (up.status === 'success') {
+            fileUrls.push(up.fileUrl);
+          } else {
+            toast('⚠ Attachment not saved: ' + up.message, 'fail');
+          }
+        } catch (upErr) {
+          toast('⚠ An attachment failed to upload — continuing', 'fail');
         }
-      } catch (upErr) {
-        toast('⚠ Receipt upload failed — submitting without it', 'fail');
+      }
+      if (fileUrls.length) {
+        // Save under whatever column the sheet calls it (auto-detect or fall back)
+        const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
+        payload[receiptCol ? receiptCol.name : 'Receipt URL'] = fileUrls.join(', ');
       }
     }
 
@@ -934,7 +941,9 @@
       const dateF  = schemaFields.find(f => isDateField(f.name)   && d[f.name]);
       const amtF   = schemaFields.find(f => isNumberField(f.name) && d[f.name]);
       const entByF = schemaFields.find(f => isEnteredByFld(f.name) && d[f.name]);
-      const fileUrl = receiptField ? d[receiptField.name] : '';
+      const fileUrls = receiptField && d[receiptField.name]
+        ? String(d[receiptField.name]).split(',').map(s => s.trim()).filter(Boolean)
+        : [];
       const bodyFields = schemaFields.filter(f => f !== dateF && f !== amtF && f !== entByF && f !== receiptField && d[f.name]);
       const enteredBy  = entByF ? String(d[entByF.name]) : '';
 
@@ -957,7 +966,7 @@
               </div>
             `).join('')}
           </div>
-          ${fileUrl ? `<a class="receipt-link" href="${escH(fileUrl)}" target="_blank">📎 View Receipt</a>` : ''}
+          ${fileUrls.length ? `<div class="receipt-links">${fileUrls.map((u, i) => `<a class="receipt-link" href="${escH(u)}" target="_blank">📎 View Receipt${fileUrls.length > 1 ? ' ' + (i+1) : ''}</a>`).join('')}</div>` : ''}
         </div>
       `;
     }).join('');
