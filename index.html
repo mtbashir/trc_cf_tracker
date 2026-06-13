@@ -310,8 +310,8 @@
 <div id="loginScreen">
   <div class="login-brand">
     <div class="login-icon">₨</div>
-    <h1>TRC CF Tracker</h1>
-    <p>Cash Flow Management</p>
+    <h1 id="loginTitle">TRC CF Tracker</h1>
+    <p id="loginSubtitle">Cash Flow Management</p>
   </div>
   <div class="login-card">
     <div class="field">
@@ -334,7 +334,7 @@
 <div id="appScreen" style="display:none;">
   <header>
     <div>
-      <h1>TRC CF Tracker</h1>
+      <h1 id="headerTitle">TRC CF Tracker</h1>
       <p>New Transaction</p>
     </div>
     <button class="logout-btn" id="logoutBtn">
@@ -449,8 +449,31 @@
     return isNaN(n) ? String(v) : n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
   }
 
+  // ── Branding (app title/subtitle) — configurable via KEYS sheet ────────────
+  // KEYS columns: _APP_TITLE (single value) and _APP_SUBTITLE (single value)
+  function applyBranding(data) {
+    const title    = (data['_APP_TITLE']    || [])[0];
+    const subtitle = (data['_APP_SUBTITLE'] || [])[0];
+    if (title) {
+      document.title = title;
+      const lt = document.getElementById('loginTitle');
+      const ht = document.getElementById('headerTitle');
+      if (lt) lt.textContent = title;
+      if (ht) ht.textContent = title;
+    }
+    if (subtitle) {
+      const ls = document.getElementById('loginSubtitle');
+      if (ls) ls.textContent = subtitle;
+    }
+  }
+
   // ══ LOGIN ════════════════════════════════════════════════════════════════
   (function() {
+    // Apply custom branding from KEYS sheet even before login
+    jsonp({ action: 'keys' }).then(json => {
+      if (json.status === 'success') applyBranding(json.data || {});
+    }).catch(() => {});
+
     const cur = sessionStorage.getItem('trc_user');
     if (cur) { launchApp(cur); return; }
     const last = localStorage.getItem(USER_KEY);
@@ -529,6 +552,7 @@
       keysData       = keysRes.data || {};
       optionalFields = new Set(keysData['_OPTIONAL'] || []);
       conditions     = (condRes && condRes.status === 'success') ? (condRes.conditions || []) : [];
+      applyBranding(keysData);
 
       buildForm(user || currentUser);
 
