@@ -279,6 +279,12 @@
       border-radius: 4px; padding: 2px 6px; margin-left: 6px;
       vertical-align: middle; text-transform: uppercase;
     }
+    .id-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: var(--primary-mid); background: var(--bg);
+      border-radius: 4px; padding: 2px 6px; margin-right: 4px;
+      vertical-align: middle;
+    }
     .empty-entries { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
     .receipt-link {
       display: inline-block; margin-top: 6px;
@@ -422,6 +428,15 @@
       sc.src = SCRIPT_URL + '?' + new URLSearchParams(Object.assign({}, params, { callback: cb }));
       document.head.appendChild(sc);
     });
+  }
+
+  // ── Reserve a unique sequential ID for a new record ────────────────────────
+  async function reserveId() {
+    try {
+      const json = await jsonp({ action: 'nextid' });
+      if (json.status === 'success') return json.id;
+    } catch (err) { /* fall through */ }
+    return Date.now();
   }
 
   // ── Toast ──────────────────────────────────────────────────────────────────
@@ -832,6 +847,10 @@
       payload[name] = val;
     });
 
+    // Reserve a unique sequential ID for this record
+    const recordId = await reserveId();
+    payload['ID'] = String(recordId);
+
     // Handle receipt upload
     const billFile = document.getElementById('billFile').files[0];
     let   fileUrl  = '';
@@ -841,7 +860,7 @@
       const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
       const typeF   = schemaFields.find(f => /^type$/i.test(f.name) || /trans.*type|type.*trans/i.test(f.name));
       const paidByF = schemaFields.find(f => /paid.?by/i.test(f.name));
-      const parts   = [ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
+      const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
       const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
       try {
         const up = await uploadReceipt(billFile, folder || ts);
@@ -924,7 +943,7 @@
           ${!r.deleted ? `<button class="delete-btn" onclick="deleteRecord(${r.row},'${enteredBy.replace(/'/g,"\\'")}')" title="Mark as deleted">✕</button>` : ''}
           <div class="entry-top">
             <div class="entry-meta">
-              ${dateF  ? `<strong>${escH(d[dateF.name])}</strong>` : ''}
+              ${d['ID'] ? `<span class="id-badge">#${escH(d['ID'])}</span> ` : ''}${dateF  ? `<strong>${escH(d[dateF.name])}</strong>` : ''}
               ${r.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}
               ${entByF ? `<br>${escH(d[entByF.name])}` : ''}
             </div>
