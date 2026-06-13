@@ -222,6 +222,19 @@
     .file-icon { font-size: 18px; flex-shrink: 0; }
     #billFile { display: none; }
     .file-chosen { margin-top: 5px; font-size: 11px; color: var(--success); word-break: break-all; }
+    .file-list { margin-bottom: 8px; }
+    .file-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 12px; margin-bottom: 6px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: #F0FDF4; font-size: 12px; color: var(--success);
+    }
+    .file-item-name { word-break: break-all; flex: 1; }
+    .file-remove {
+      flex-shrink: 0; border: none; background: none; cursor: pointer;
+      font-size: 14px; color: var(--muted); line-height: 1; padding: 2px 4px;
+    }
+    .file-remove:active { color: #DC2626; }
 
     /* ── Entries ── */
     .entries-header {
@@ -380,12 +393,12 @@
         <div class="card-title">Attachment</div>
         <div class="field">
           <label>Receipt / Bill <span class="opt">(optional)</span></label>
+          <div class="file-list" id="fileList"></div>
           <label class="file-upload-label" for="billFile">
             <span class="file-icon">📎</span>
             <span id="filePickerText">Tap to attach photo or PDF</span>
           </label>
-          <input type="file" id="billFile" accept="image/*,.pdf" multiple>
-          <div class="file-chosen" id="fileChosen"></div>
+          <input type="file" id="billFile" accept="image/*,.pdf">
         </div>
       </div>
 
@@ -777,30 +790,46 @@
     // Re-evaluate conditional field visibility now that trigger fields are cleared
     conditionalUpdaters.forEach(fn => fn());
 
-    // Reset file
-    document.getElementById('billFile').value            = '';
-    document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
-    document.getElementById('fileChosen').textContent     = '';
-    const lbl = document.querySelector('.file-upload-label');
-    if (lbl) lbl.classList.remove('has-file');
+    // Reset file(s)
+    attachedFiles = [];
+    document.getElementById('billFile').value = '';
+    renderFileList();
   }
 
-  // ── File upload listener ───────────────────────────────────────────────────
+  // ── File upload listener ─────────────────────────────────────────────────
+  let attachedFiles = [];
+
   document.getElementById('billFile').addEventListener('change', function () {
-    const files = this.files;
-    const lbl   = document.querySelector('.file-upload-label');
-    if (files && files.length) {
-      document.getElementById('filePickerText').textContent = 'Change files';
-      document.getElementById('fileChosen').textContent     = files.length === 1
-        ? '✓ ' + files[0].name
-        : `✓ ${files.length} files selected`;
-      if (lbl) lbl.classList.add('has-file');
-    } else {
-      document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
-      document.getElementById('fileChosen').textContent     = '';
-      if (lbl) lbl.classList.remove('has-file');
-    }
+    const f = this.files[0];
+    if (f) attachedFiles.push(f);
+    this.value = ''; // allow picking the same or another file again
+    renderFileList();
   });
+
+  function renderFileList() {
+    const fl  = document.getElementById('fileList');
+    const lbl = document.querySelector('.file-upload-label');
+    if (!attachedFiles.length) {
+      fl.innerHTML = '';
+      document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
+      if (lbl) lbl.classList.remove('has-file');
+      return;
+    }
+    document.getElementById('filePickerText').textContent = '+ Add another file';
+    if (lbl) lbl.classList.add('has-file');
+    fl.innerHTML = attachedFiles.map((f, i) => `
+      <div class="file-item">
+        <span class="file-item-name">📎 ${escH(f.name)}</span>
+        <button type="button" class="file-remove" data-idx="${i}" title="Remove">✕</button>
+      </div>
+    `).join('');
+    fl.querySelectorAll('.file-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        attachedFiles.splice(parseInt(btn.dataset.idx, 10), 1);
+        renderFileList();
+      });
+    });
+  }
 
   // ── Upload receipt to Drive via Apps Script doPost ─────────────────────────
   function uploadReceipt(file, folderName) {
@@ -855,7 +884,7 @@
     payload['ID'] = String(recordId);
 
     // Handle receipt upload(s)
-    const billFiles = Array.from(document.getElementById('billFile').files || []);
+    const billFiles = attachedFiles;
     if (billFiles.length) {
       const now = new Date();
       const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
