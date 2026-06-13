@@ -406,6 +406,8 @@
   let schemaFields   = [];  // [{name, colIndex, optional}, ...]
   let keysData       = {};  // {ColumnName: [val1, val2, ...], ...}
   let optionalFields = new Set();
+  let conditions     = [];  // [{field, triggerField, triggerValues, options}, ...]
+  let conditionalUpdaters = [];
   let currentUser    = '';
 
   // ── JSONP ──────────────────────────────────────────────────────────────────
@@ -511,10 +513,11 @@
     document.getElementById('submitBtn').disabled = true;
 
     try {
-      // Load schema (Sheet1 headers) and keys (dropdown lists) in parallel
-      const [schemaRes, keysRes] = await Promise.all([
+      // Load schema (Sheet1 headers), keys (dropdown lists) and conditions in parallel
+      const [schemaRes, keysRes, condRes] = await Promise.all([
         jsonp({ action: 'schema' }),
-        jsonp({ action: 'keys'   })
+        jsonp({ action: 'keys'   }),
+        jsonp({ action: 'conditions' })
       ]);
 
       if (schemaRes.status !== 'success') throw new Error('Schema: ' + schemaRes.message);
@@ -525,6 +528,7 @@
       schemaFields   = schemaRes.fields;
       keysData       = keysRes.data || {};
       optionalFields = new Set(keysData['_OPTIONAL'] || []);
+      conditions     = (condRes && condRes.status === 'success') ? (condRes.conditions || []) : [];
 
       buildForm(user || currentUser);
 
@@ -543,11 +547,23 @@
   function buildForm(user) {
     const container  = document.getElementById('dynamicFields');
     container.innerHTML = '';
+    conditionalUpdaters = [];
     const loggedUser = user || sessionStorage.getItem('trc_user') || '';
+
+    // Map field name -> list of conditions that control its visibility
+    const condByField = {};
+    conditions.forEach(c => {
+      if (!condByField[c.field]) condByField[c.field] = [];
+      condByField[c.field].push(c);
+    });
 
     schemaFields.forEach(field => {
       const { name, colIndex } = field;
       const values   = (keysData[name] || []).filter(Boolean);
+      // Merge in any extra dropdown options supplied via CONDITIONS
+      (condByField[name] || []).forEach(c => {
+        (c.options || []).forEach(o => { if (o && !values.includes(o)) values.push(o); });
+      });
       const optional = optionalFields.has(name);
       const fid      = `f_${colIndex}`;
 
@@ -627,6 +643,15 @@
       div.appendChild(label);
       div.appendChild(el);
       div.appendChild(errEl);
+
+      // Conditional fields start hidden until their trigger condition matches
+      if (condByField[name]) {
+        div.style.display = 'none';
+        div.dataset.conditional = 'true';
+        el.dataset.baseRequired = optional ? '' : 'true';
+        el.dataset.required = '';
+      }
+
       container.appendChild(div);
 
       // Clear validation on interaction
@@ -636,6 +661,41 @@
           errEl.classList.remove('show');
         });
       });
+    });
+
+    // ── Wire up conditional show/hide based on trigger field values ──
+    schemaFields.forEach(triggerField => {
+      const dependents = schemaFields.filter(f =>
+        (condByField[f.name] || []).some(c => c.triggerField === triggerField.name)
+      );
+      if (!dependents.length) return;
+
+      const triggerEl = document.getElementById(`f_${triggerField.colIndex}`);
+      if (!triggerEl) return;
+
+      const update = () => {
+        const val = (triggerEl.value || '').trim().toLowerCase();
+        dependents.forEach(dep => {
+          const depEl  = document.getElementById(`f_${dep.colIndex}`);
+          const depDiv = depEl.closest('.field');
+          const matches = (condByField[dep.name] || []).some(c =>
+            c.triggerField === triggerField.name &&
+            c.triggerValues.some(tv => tv.toLowerCase() === val)
+          );
+          depDiv.style.display = matches ? '' : 'none';
+          depEl.dataset.required = matches ? depEl.dataset.baseRequired : '';
+          if (!matches) {
+            depEl.value = '';
+            depEl.classList.remove('invalid');
+            const errEl = document.getElementById(`e_${dep.colIndex}`);
+            if (errEl) errEl.classList.remove('show');
+          }
+        });
+      };
+
+      triggerEl.addEventListener('change', update);
+      conditionalUpdaters.push(update);
+      update();
     });
   }
 
@@ -674,6 +734,9 @@
       const errEl = document.getElementById(`e_${colIndex}`);
       if (errEl) errEl.classList.remove('show');
     });
+    // Re-evaluate conditional field visibility now that trigger fields are cleared
+    conditionalUpdaters.forEach(fn => fn());
+
     // Reset file
     document.getElementById('billFile').value            = '';
     document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
