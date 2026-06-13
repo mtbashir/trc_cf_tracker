@@ -235,6 +235,12 @@
       border-radius: 100px; font-size: 11px; font-weight: 700;
       padding: 1px 7px; min-width: 20px; text-align: center;
     }
+    .refresh-btn {
+      margin-left: auto; background: none; border: none;
+      color: var(--primary-mid); font-size: 16px;
+      cursor: pointer; padding: 2px 4px; line-height: 1;
+    }
+    .refresh-btn:active { transform: rotate(180deg); }
     .entry-card {
       background: var(--card); border-radius: var(--radius);
       box-shadow: var(--shadow); padding: 14px;
@@ -382,8 +388,9 @@
     </form>
 
     <div class="entries-header">
-      <span>My Entries</span>
+      <span>Recent Records</span>
       <span class="badge" id="entriesCount">0</span>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh">↺</button>
     </div>
     <div id="entriesList"></div>
 
@@ -394,7 +401,6 @@
 
 <script>
   const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxlETGLSls6bxAvy1811cExWg6L-YMZYmaYFTFwHrwLORvxia_uOxd_5Ya8q2jvyOVw/exec';
-  const ENTRIES_KEY = 'trc_entries_v3';   // v3 = dynamic-schema format
   const USER_KEY    = 'trc_last_user';
 
   let schemaFields   = [];  // [{name, colIndex, optional}, ...]
@@ -493,7 +499,7 @@
   // ══ APP INIT ═════════════════════════════════════════════════════════════
   function initApp(user) {
     currentUser = user;
-    renderEntries();
+    loadRecords();
     loadSchemaAndKeys(user);
   }
 
@@ -558,11 +564,19 @@
           o.value = o.textContent = v;
           el.appendChild(o);
         });
-        // Auto-set "Entered By"-style fields from the logged-in username
+        // Auto-set "Entered By"-style fields from the logged-in username and lock them
         if (isEnteredByFld(name)) {
           const match = Array.from(el.options)
             .find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
-          if (match) el.value = match.value;
+          if (match) {
+            el.value = match.value;
+          } else if (loggedUser) {
+            const o = document.createElement('option');
+            o.value = o.textContent = loggedUser;
+            el.appendChild(o);
+            el.value = loggedUser;
+          }
+          el.disabled = true;
         }
       } else if (isDateField(name)) {
         el = document.createElement('input');
@@ -583,6 +597,12 @@
         el.type         = 'text';
         el.placeholder  = 'Enter ' + name.toLowerCase() + '…';
         el.autocomplete = 'off';
+      }
+
+      // Auto-fill and lock "Entered By"-style free-text fields too
+      if (isEnteredByFld(name) && el.tagName !== 'SELECT') {
+        el.value    = loggedUser;
+        el.readOnly = true;
       }
 
       el.id               = fid;
@@ -645,8 +665,8 @@
       if (!el) return;
       if (isDateField(name)) {
         el.value = new Date().toLocaleDateString('en-CA');
-      } else if (isEnteredByFld(name) && el.tagName === 'SELECT') {
-        // Keep the Entered By value
+      } else if (isEnteredByFld(name)) {
+        // Keep the Entered By value (auto-filled and locked)
       } else {
         el.value = '';
       }
@@ -755,16 +775,9 @@
     try {
       const json = await jsonp(payload);
       if (json.status === 'success') {
-        const entry = {
-          id:      Date.now(),
-          row:     json.row,
-          deleted: false,
-          fileUrl: fileUrl,
-          fields:  schemaFields.map(f => ({ name: f.name, value: payload[f.name] || '' }))
-        };
-        saveEntry(entry);
         toast('✓ Transaction recorded!', 'ok');
         resetForm();
+        loadRecords();
       } else {
         toast('⚠ ' + (json.message || 'Unknown error'), 'fail');
       }
@@ -776,79 +789,75 @@
     }
   });
 
-  // ══ ENTRIES ══════════════════════════════════════════════════════════════
-  function getEntries() {
-    try { return JSON.parse(localStorage.getItem(ENTRIES_KEY) || '[]'); } catch { return []; }
+  // ══ RECORDS (live from sheet, all users) ════════════════════════════════════
+  let serverRows = [];
+
+  async function loadRecords() {
+    try {
+      const json = await jsonp({ action: 'records' });
+      if (json.status === 'success') {
+        serverRows = json.rows || [];
+        renderRecords();
+      }
+    } catch (err) { /* silent — keep showing previous list */ }
   }
 
-  function saveEntry(entry) {
-    const entries = getEntries();
-    entries.unshift(entry);
-    if (entries.length > 100) entries.length = 100;
-    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-    renderEntries();
-  }
-
-  function markDeleted(id) {
-    const entries = getEntries();
-    const idx = entries.findIndex(e => e.id === id);
-    if (idx !== -1) { entries[idx].deleted = true; localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries)); }
-    renderEntries();
-  }
-
-  async function deleteEntry(id, row, enteredBy) {
+  async function deleteRecord(row, enteredBy) {
     if (!confirm('Mark this record as deleted in the sheet?')) return;
     try {
-      const json = await jsonp({ action: 'delete', row, enteredBy });
-      if (json.status === 'success') { markDeleted(id); toast('Record marked as deleted', 'ok'); }
+      const json = await jsonp({ action: 'delete', row, enteredBy: currentUser });
+      if (json.status === 'success') { toast('Record marked as deleted', 'ok'); loadRecords(); }
       else toast('⚠ ' + json.message, 'fail');
     } catch (err) { toast('✗ ' + err.message, 'fail'); }
   }
 
-  function renderEntries() {
-    const entries = getEntries();
-    const list    = document.getElementById('entriesList');
-    const count   = document.getElementById('entriesCount');
-    count.textContent = entries.filter(e => !e.deleted).length;
+  function renderRecords() {
+    const list  = document.getElementById('entriesList');
+    const count = document.getElementById('entriesCount');
+    count.textContent = serverRows.filter(r => !r.deleted).length;
 
-    if (!entries.length) {
-      list.innerHTML = '<div class="empty-entries">No entries yet. Submit a transaction to see it here.</div>';
+    if (!serverRows.length) {
+      list.innerHTML = '<div class="empty-entries">No records yet. Submit a transaction to see it here.</div>';
       return;
     }
 
-    list.innerHTML = entries.map(entry => {
-      const fields     = entry.fields || [];
-      const dateF      = fields.find(f => isDateField(f.name)   && f.value);
-      const amtF       = fields.find(f => isNumberField(f.name) && f.value);
-      const entByF     = fields.find(f => isEnteredByFld(f.name) && f.value);
-      // All other fields (skip date and amount as they're shown in header)
-      const bodyFields = fields.filter(f => f !== dateF && f !== amtF && f.value);
-      const enteredBy  = entByF ? entByF.value : '';
+    const receiptField = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
+
+    list.innerHTML = serverRows.map(r => {
+      const d      = r.data || {};
+      const dateF  = schemaFields.find(f => isDateField(f.name)   && d[f.name]);
+      const amtF   = schemaFields.find(f => isNumberField(f.name) && d[f.name]);
+      const entByF = schemaFields.find(f => isEnteredByFld(f.name) && d[f.name]);
+      const fileUrl = receiptField ? d[receiptField.name] : '';
+      const bodyFields = schemaFields.filter(f => f !== dateF && f !== amtF && f !== entByF && f !== receiptField && d[f.name]);
+      const enteredBy  = entByF ? String(d[entByF.name]) : '';
 
       return `
-        <div class="entry-card ${entry.deleted ? 'deleted' : ''}">
-          ${!entry.deleted ? `<button class="delete-btn" onclick="deleteEntry(${entry.id},${entry.row},'${enteredBy.replace(/'/g,"\\'")}')" title="Mark as deleted">✕</button>` : ''}
+        <div class="entry-card ${r.deleted ? 'deleted' : ''}">
+          ${!r.deleted ? `<button class="delete-btn" onclick="deleteRecord(${r.row},'${enteredBy.replace(/'/g,"\\'")}')" title="Mark as deleted">✕</button>` : ''}
           <div class="entry-top">
             <div class="entry-meta">
-              ${dateF  ? `<strong>${escH(dateF.value)}</strong>` : ''}
-              ${entry.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}
-              ${entByF ? `<br>${escH(entByF.value)}` : ''}
+              ${dateF  ? `<strong>${escH(d[dateF.name])}</strong>` : ''}
+              ${r.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}
+              ${entByF ? `<br>${escH(d[entByF.name])}` : ''}
             </div>
-            ${amtF ? `<div class="entry-amount">Rs ${fmtAmt(amtF.value)}</div>` : ''}
+            ${amtF ? `<div class="entry-amount">Rs ${fmtAmt(d[amtF.name])}</div>` : ''}
           </div>
           <div class="entry-fields">
-            ${bodyFields.filter(f => f !== entByF).map(f => `
+            ${bodyFields.map(f => `
               <div class="entry-kv">
                 <span class="entry-k">${escH(f.name)}</span>
-                <span class="entry-v">${escH(f.value)}</span>
+                <span class="entry-v">${escH(d[f.name])}</span>
               </div>
             `).join('')}
           </div>
-          ${entry.fileUrl ? `<a class="receipt-link" href="${escH(entry.fileUrl)}" target="_blank">📎 View Receipt</a>` : ''}
+          ${fileUrl ? `<a class="receipt-link" href="${escH(fileUrl)}" target="_blank">📎 View Receipt</a>` : ''}
         </div>
       `;
     }).join('');
   }
+
+  document.getElementById('refreshBtn').addEventListener('click', loadRecords);
 </script>
 </body>
 </html>
