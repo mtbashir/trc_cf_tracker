@@ -744,11 +744,13 @@
           depDiv.style.display = matches ? '' : 'none';
           depEl.dataset.required = matches ? depEl.dataset.baseRequired : '';
 
-          // Rebuild dropdown options based on which condition(s) match the current trigger value
+          // Rebuild dropdown options based on which condition(s) match the current trigger value.
+          // If a matching condition supplies its own options, use only those (don't merge with base KEYS values).
           if (depEl.tagName === 'SELECT') {
             const prevVal = depEl.value;
-            const opts = (baseValuesByField[dep.name] || []).slice();
-            relevant.forEach(c => (c.options || []).forEach(o => { if (o && !opts.includes(o)) opts.push(o); }));
+            const condOpts = [];
+            relevant.forEach(c => (c.options || []).forEach(o => { if (o && !condOpts.includes(o)) condOpts.push(o); }));
+            const opts = condOpts.length ? condOpts : (baseValuesByField[dep.name] || []).slice();
             depEl.innerHTML = '';
             const blank = document.createElement('option');
             blank.value = ''; blank.textContent = '— select —';
