@@ -185,6 +185,20 @@
     .err-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
     .err-msg.show { display: block; }
 
+    /* ── Searchable combo dropdown ── */
+    .combo-wrap { position: relative; }
+    .combo-list {
+      position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+      max-height: 200px; overflow-y: auto;
+      background: #fff; border: 1.5px solid var(--border); border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      z-index: 50; display: none;
+    }
+    .combo-list.show { display: block; }
+    .combo-option { padding: 10px 13px; font-size: 14px; cursor: pointer; }
+    .combo-option:hover, .combo-option.active { background: #EEF2FF; }
+    .combo-empty { padding: 10px 13px; font-size: 13px; color: var(--muted); }
+
     /* ── Submit ── */
     .btn-submit {
       width: 100%; padding: 15px;
@@ -433,6 +447,7 @@
   let optionalFields = new Set();
   let conditions     = [];  // [{field, triggerField, triggerValues, options}, ...]
   let conditionalUpdaters = [];
+  let comboOptionsByFid = {};  // {fid: [option, ...]} — current option list for searchable combo fields
   let currentUser    = '';
 
   // ── JSONP ──────────────────────────────────────────────────────────────────
@@ -601,11 +616,54 @@
     }
   }
 
+  // ── Searchable combo dropdown helpers ───────────────────────────────────────
+  function renderComboList(el, listEl, fid) {
+    const opts = comboOptionsByFid[fid] || [];
+    const q = (el.value || '').trim().toLowerCase();
+    const filtered = q ? opts.filter(o => o.toLowerCase().includes(q)) : opts;
+    listEl.innerHTML = '';
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'combo-empty';
+      empty.textContent = 'No matches';
+      listEl.appendChild(empty);
+      return;
+    }
+    filtered.forEach(o => {
+      const item = document.createElement('div');
+      item.className = 'combo-option';
+      item.textContent = o;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        el.value = o;
+        listEl.classList.remove('show');
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      listEl.appendChild(item);
+    });
+  }
+
+  function setupCombo(el, listEl, fid) {
+    el.addEventListener('focus', () => {
+      renderComboList(el, listEl, fid);
+      listEl.classList.add('show');
+    });
+    el.addEventListener('input', () => {
+      renderComboList(el, listEl, fid);
+      listEl.classList.add('show');
+    });
+    el.addEventListener('blur', () => {
+      setTimeout(() => listEl.classList.remove('show'), 150);
+    });
+  }
+
   // ── Build form dynamically from schema ────────────────────────────────────
   function buildForm(user) {
     const container  = document.getElementById('dynamicFields');
     container.innerHTML = '';
     conditionalUpdaters = [];
+    comboOptionsByFid = {};
     const loggedUser = user || sessionStorage.getItem('trc_user') || '';
 
     // Map field name -> list of conditions that control its visibility
@@ -627,7 +685,7 @@
 
       // ── Create the appropriate input element ──
       let el;
-      if (values.length || hasConditionalOptions) {
+      if ((values.length || hasConditionalOptions) && isEnteredByFld(name)) {
         // Dropdown — KEYS has values for this column name
         el = document.createElement('select');
         const blank = document.createElement('option');
@@ -639,19 +697,25 @@
           el.appendChild(o);
         });
         // Auto-set "Entered By"-style fields from the logged-in username and lock them
-        if (isEnteredByFld(name)) {
-          const match = Array.from(el.options)
-            .find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
-          if (match) {
-            el.value = match.value;
-          } else if (loggedUser) {
-            const o = document.createElement('option');
-            o.value = o.textContent = loggedUser;
-            el.appendChild(o);
-            el.value = loggedUser;
-          }
-          el.disabled = true;
+        const match = Array.from(el.options)
+          .find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
+        if (match) {
+          el.value = match.value;
+        } else if (loggedUser) {
+          const o = document.createElement('option');
+          o.value = o.textContent = loggedUser;
+          el.appendChild(o);
+          el.value = loggedUser;
         }
+        el.disabled = true;
+      } else if (values.length || hasConditionalOptions) {
+        // Searchable combo — type to filter the list of values
+        el = document.createElement('input');
+        el.type         = 'text';
+        el.autocomplete = 'off';
+        el.placeholder  = '— select or type to search —';
+        el.dataset.combo = 'true';
+        comboOptionsByFid[fid] = values.slice();
       } else if (isDateField(name)) {
         el = document.createElement('input');
         el.type  = 'date';
@@ -699,7 +763,19 @@
       const div = document.createElement('div');
       div.className = 'field';
       div.appendChild(label);
-      div.appendChild(el);
+      if (el.dataset.combo === 'true') {
+        const wrap = document.createElement('div');
+        wrap.className = 'combo-wrap';
+        wrap.appendChild(el);
+        const list = document.createElement('div');
+        list.className = 'combo-list';
+        list.id = `cl_${colIndex}`;
+        wrap.appendChild(list);
+        div.appendChild(wrap);
+        setupCombo(el, list, fid);
+      } else {
+        div.appendChild(el);
+      }
       div.appendChild(errEl);
 
       // Conditional fields start hidden until their trigger condition matches
@@ -761,6 +837,15 @@
               depEl.appendChild(o);
             });
             depEl.value = opts.includes(prevVal) ? prevVal : '';
+          } else if (depEl.dataset.combo === 'true') {
+            const prevVal = depEl.value;
+            const condOpts = [];
+            relevant.forEach(c => (c.options || []).forEach(o => { if (o && !condOpts.includes(o)) condOpts.push(o); }));
+            const opts = condOpts.length ? condOpts : (baseValuesByField[dep.name] || []).slice();
+            comboOptionsByFid[`f_${dep.colIndex}`] = opts;
+            depEl.value = opts.includes(prevVal) ? prevVal : '';
+            const listEl = document.getElementById(`cl_${dep.colIndex}`);
+            if (listEl) renderComboList(depEl, listEl, `f_${dep.colIndex}`);
           }
 
           if (!matches) {
