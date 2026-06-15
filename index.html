@@ -614,20 +614,20 @@
       if (!condByField[c.field]) condByField[c.field] = [];
       condByField[c.field].push(c);
     });
+    const baseValuesByField = {};
 
     schemaFields.forEach(field => {
       const { name, colIndex } = field;
-      const values   = (keysData[name] || []).filter(Boolean);
-      // Merge in any extra dropdown options supplied via CONDITIONS
-      (condByField[name] || []).forEach(c => {
-        (c.options || []).forEach(o => { if (o && !values.includes(o)) values.push(o); });
-      });
+      const values = (keysData[name] || []).filter(Boolean);
+      baseValuesByField[name] = values;
+      // Conditional dropdown options are applied per-trigger-value at runtime (see update below)
+      const hasConditionalOptions = (condByField[name] || []).some(c => (c.options || []).length > 0);
       const optional = optionalFields.has(name);
       const fid      = `f_${colIndex}`;
 
       // ── Create the appropriate input element ──
       let el;
-      if (values.length) {
+      if (values.length || hasConditionalOptions) {
         // Dropdown — KEYS has values for this column name
         el = document.createElement('select');
         const blank = document.createElement('option');
@@ -736,12 +736,31 @@
         dependents.forEach(dep => {
           const depEl  = document.getElementById(`f_${dep.colIndex}`);
           const depDiv = depEl.closest('.field');
-          const matches = (condByField[dep.name] || []).some(c =>
+          const relevant = (condByField[dep.name] || []).filter(c =>
             c.triggerField === triggerField.name &&
             c.triggerValues.some(tv => tv.toLowerCase() === val)
           );
+          const matches = relevant.length > 0;
           depDiv.style.display = matches ? '' : 'none';
           depEl.dataset.required = matches ? depEl.dataset.baseRequired : '';
+
+          // Rebuild dropdown options based on which condition(s) match the current trigger value
+          if (depEl.tagName === 'SELECT') {
+            const prevVal = depEl.value;
+            const opts = (baseValuesByField[dep.name] || []).slice();
+            relevant.forEach(c => (c.options || []).forEach(o => { if (o && !opts.includes(o)) opts.push(o); }));
+            depEl.innerHTML = '';
+            const blank = document.createElement('option');
+            blank.value = ''; blank.textContent = '— select —';
+            depEl.appendChild(blank);
+            opts.forEach(v => {
+              const o = document.createElement('option');
+              o.value = o.textContent = v;
+              depEl.appendChild(o);
+            });
+            depEl.value = opts.includes(prevVal) ? prevVal : '';
+          }
+
           if (!matches) {
             depEl.value = '';
             depEl.classList.remove('invalid');
