@@ -431,6 +431,7 @@
       <span class="badge" id="entriesCount">0</span>
       <button class="refresh-btn" id="refreshBtn" title="Refresh">↺</button>
     </div>
+    <input type="text" id="recordSearch" placeholder="🔍 Search records — amount, shop, type…" autocomplete="off" style="margin-bottom:12px;">
     <div id="entriesList"></div>
 
   </div>
@@ -597,13 +598,41 @@
       if (!schemaRes.fields || !schemaRes.fields.length)
         throw new Error('Sheet1 has no column headers. Add headers to row 1.');
 
-      schemaFields   = schemaRes.fields;
-      keysData       = keysRes.data || {};
-      optionalFields = new Set(keysData['_OPTIONAL'] || []);
-      conditions     = (condRes && condRes.status === 'success') ? (condRes.conditions || []) : [];
+      // A leading "*" on a column header (in Sheet1 or KEYS) marks that field MANDATORY.
+      // `name` keeps the raw header (used for reading/writing sheet data);
+      // `label` is the clean display name (used for UI, lookups and matching).
+      const stripStar = s => String(s || '').replace(/^\s*\*\s*/, '');
+      const isStarred = s => /^\s*\*/.test(String(s || ''));
+      const starred   = new Set();
+
+      schemaFields = schemaRes.fields.map(f => {
+        const label = stripStar(f.name);
+        if (isStarred(f.name)) starred.add(label.toLowerCase());
+        return Object.assign({}, f, { label });
+      });
+
+      const rawKeys = keysRes.data || {};
+      keysData = {};
+      Object.keys(rawKeys).forEach(k => {
+        const ck = stripStar(k);
+        if (isStarred(k)) starred.add(ck.toLowerCase());
+        keysData[ck] = rawKeys[k];
+      });
+
+      conditions = ((condRes && condRes.status === 'success') ? (condRes.conditions || []) : [])
+        .map(c => Object.assign({}, c, { field: stripStar(c.field), triggerField: stripStar(c.triggerField) }));
+
+      // If any header is starred, use the asterisk convention: starred = mandatory, everything else optional.
+      // Otherwise fall back to the old _OPTIONAL list (all fields mandatory unless listed there).
+      if (starred.size) {
+        optionalFields = new Set(schemaFields.filter(f => !starred.has(f.label.toLowerCase())).map(f => f.label));
+      } else {
+        optionalFields = new Set((keysData['_OPTIONAL'] || []).map(stripStar));
+      }
       applyBranding(keysData);
 
       buildForm(user || currentUser);
+      renderRecords();  // re-render now that schema (Entered By field) is known
 
       document.getElementById('loadBanner').classList.add('hidden');
       document.getElementById('fieldsCard').style.display = '';
@@ -676,16 +705,17 @@
 
     schemaFields.forEach(field => {
       const { name, colIndex } = field;
-      const values = (keysData[name] || []).filter(Boolean);
-      baseValuesByField[name] = values;
+      const label0 = field.label || name;
+      const values = (keysData[label0] || []).filter(Boolean);
+      baseValuesByField[label0] = values;
       // Conditional dropdown options are applied per-trigger-value at runtime (see update below)
-      const hasConditionalOptions = (condByField[name] || []).some(c => (c.options || []).length > 0);
-      const optional = optionalFields.has(name);
+      const hasConditionalOptions = (condByField[label0] || []).some(c => (c.options || []).length > 0);
+      const optional = optionalFields.has(label0);
       const fid      = `f_${colIndex}`;
 
       // ── Create the appropriate input element ──
       let el;
-      if ((values.length || hasConditionalOptions) && isEnteredByFld(name)) {
+      if ((values.length || hasConditionalOptions) && isEnteredByFld(label0)) {
         // Dropdown — KEYS has values for this column name
         el = document.createElement('select');
         const blank = document.createElement('option');
@@ -716,29 +746,29 @@
         el.placeholder  = '— select or type to search —';
         el.dataset.combo = 'true';
         comboOptionsByFid[fid] = values.slice();
-      } else if (isDateField(name)) {
+      } else if (isDateField(label0)) {
         el = document.createElement('input');
         el.type  = 'date';
         el.value = new Date().toLocaleDateString('en-CA');
-      } else if (isNumberField(name)) {
+      } else if (isNumberField(label0)) {
         el = document.createElement('input');
         el.type        = 'number';
         el.step        = 'any';
         el.inputMode   = 'decimal';
         el.placeholder = '0.00';
         el.classList.add('amount-input');
-      } else if (isTextareaField(name)) {
+      } else if (isTextareaField(label0)) {
         el = document.createElement('textarea');
-        el.placeholder = 'Enter ' + name.toLowerCase() + '…';
+        el.placeholder = 'Enter ' + label0.toLowerCase() + '…';
       } else {
         el = document.createElement('input');
         el.type         = 'text';
-        el.placeholder  = 'Enter ' + name.toLowerCase() + '…';
+        el.placeholder  = 'Enter ' + label0.toLowerCase() + '…';
         el.autocomplete = 'off';
       }
 
       // Auto-fill and lock "Entered By"-style free-text fields too
-      if (isEnteredByFld(name) && el.tagName !== 'SELECT') {
+      if (isEnteredByFld(label0) && el.tagName !== 'SELECT') {
         el.value    = loggedUser;
         el.readOnly = true;
       }
@@ -750,14 +780,14 @@
       // ── Label ──
       const label = document.createElement('label');
       label.setAttribute('for', fid);
-      label.innerHTML = escH(name) +
+      label.innerHTML = escH(label0) +
         (optional ? ' <span class="opt">(optional)</span>' : ' <span class="req">*</span>');
 
       // ── Error hint ──
       const errEl = document.createElement('div');
       errEl.className   = 'err-msg';
       errEl.id          = `e_${colIndex}`;
-      errEl.textContent = values.length ? `Select ${name}` : `Enter ${name}`;
+      errEl.textContent = values.length ? `Select ${label0}` : `Enter ${label0}`;
 
       // ── Wrapper ──
       const div = document.createElement('div');
@@ -779,7 +809,7 @@
       div.appendChild(errEl);
 
       // Conditional fields start hidden until their trigger condition matches
-      if (condByField[name]) {
+      if (condByField[label0]) {
         div.style.display = 'none';
         div.dataset.conditional = 'true';
         el.dataset.baseRequired = optional ? '' : 'true';
@@ -799,8 +829,9 @@
 
     // ── Wire up conditional show/hide based on trigger field values ──
     schemaFields.forEach(triggerField => {
+      const trigLabel = triggerField.label || triggerField.name;
       const dependents = schemaFields.filter(f =>
-        (condByField[f.name] || []).some(c => c.triggerField === triggerField.name)
+        (condByField[f.label || f.name] || []).some(c => c.triggerField === trigLabel)
       );
       if (!dependents.length) return;
 
@@ -810,10 +841,11 @@
       const update = () => {
         const val = (triggerEl.value || '').trim().toLowerCase();
         dependents.forEach(dep => {
+          const depLabel = dep.label || dep.name;
           const depEl  = document.getElementById(`f_${dep.colIndex}`);
           const depDiv = depEl.closest('.field');
-          const relevant = (condByField[dep.name] || []).filter(c =>
-            c.triggerField === triggerField.name &&
+          const relevant = (condByField[depLabel] || []).filter(c =>
+            c.triggerField === trigLabel &&
             c.triggerValues.some(tv => tv.toLowerCase() === val)
           );
           const matches = relevant.length > 0;
@@ -826,7 +858,7 @@
             const prevVal = depEl.value;
             const condOpts = [];
             relevant.forEach(c => (c.options || []).forEach(o => { if (o && !condOpts.includes(o)) condOpts.push(o); }));
-            const opts = condOpts.length ? condOpts : (baseValuesByField[dep.name] || []).slice();
+            const opts = condOpts.length ? condOpts : (baseValuesByField[depLabel] || []).slice();
             depEl.innerHTML = '';
             const blank = document.createElement('option');
             blank.value = ''; blank.textContent = '— select —';
@@ -841,7 +873,7 @@
             const prevVal = depEl.value;
             const condOpts = [];
             relevant.forEach(c => (c.options || []).forEach(o => { if (o && !condOpts.includes(o)) condOpts.push(o); }));
-            const opts = condOpts.length ? condOpts : (baseValuesByField[dep.name] || []).slice();
+            const opts = condOpts.length ? condOpts : (baseValuesByField[depLabel] || []).slice();
             comboOptionsByFid[`f_${dep.colIndex}`] = opts;
             depEl.value = opts.includes(prevVal) ? prevVal : '';
             const listEl = document.getElementById(`cl_${dep.colIndex}`);
@@ -866,11 +898,11 @@
   // ── Validation ─────────────────────────────────────────────────────────────
   function validate() {
     let ok = true;
-    schemaFields.forEach(({ name, colIndex }) => {
+    schemaFields.forEach(({ name, label, colIndex }) => {
       const el = document.getElementById(`f_${colIndex}`);
       if (!el || el.dataset.required !== 'true') return;
       const val = el.value.trim();
-      const bad = !val || (isNumberField(name) && isNaN(parseFloat(val)));
+      const bad = !val || (isNumberField(label || name) && isNaN(parseFloat(val)));
       if (bad) {
         el.classList.add('invalid');
         const errEl = document.getElementById(`e_${colIndex}`);
@@ -884,12 +916,12 @@
 
   // ── Reset form ─────────────────────────────────────────────────────────────
   function resetForm() {
-    schemaFields.forEach(({ name, colIndex }) => {
+    schemaFields.forEach(({ name, label, colIndex }) => {
       const el = document.getElementById(`f_${colIndex}`);
       if (!el) return;
-      if (isDateField(name)) {
+      if (isDateField(label || name)) {
         el.value = new Date().toLocaleDateString('en-CA');
-      } else if (isEnteredByFld(name)) {
+      } else if (isEnteredByFld(label || name)) {
         // Keep the Entered By value (auto-filled and locked)
       } else {
         el.value = '';
@@ -999,8 +1031,8 @@
     if (billFiles.length) {
       const now = new Date();
       const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-      const typeF   = schemaFields.find(f => /^type$/i.test(f.name) || /trans.*type|type.*trans/i.test(f.name));
-      const paidByF = schemaFields.find(f => /paid.?by/i.test(f.name));
+      const typeF   = schemaFields.find(f => /^type$/i.test(f.label || f.name) || /trans.*type|type.*trans/i.test(f.label || f.name));
+      const paidByF = schemaFields.find(f => /paid.?by/i.test(f.label || f.name));
       const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
       const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
       const fileUrls = [];
@@ -1019,7 +1051,7 @@
       }
       if (fileUrls.length) {
         // Save under whatever column the sheet calls it (auto-detect or fall back)
-        const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
+        const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.label || f.name));
         payload[receiptCol ? receiptCol.name : 'Receipt URL'] = fileUrls.join(', ');
       }
     }
@@ -1042,7 +1074,7 @@
     }
   });
 
-  // ══ RECORDS (live from sheet, all users) ════════════════════════════════════
+  // ══ RECORDS (live from sheet — only the logged-in user's entries are shown) ══
   let serverRows = [];
 
   async function loadRecords() {
@@ -1067,20 +1099,37 @@
   function renderRecords() {
     const list  = document.getElementById('entriesList');
     const count = document.getElementById('entriesCount');
-    count.textContent = serverRows.filter(r => !r.deleted).length;
 
-    if (!serverRows.length) {
-      list.innerHTML = '<div class="empty-entries">No records yet. Submit a transaction to see it here.</div>';
+    // Only show records entered by the logged-in user
+    const entField = schemaFields.find(f => isEnteredByFld(f.label || f.name));
+    const me = String(currentUser || '').trim().toLowerCase();
+    let rows = serverRows.filter(r => {
+      if (!entField || !me) return true;
+      return String((r.data || {})[entField.name] || '').trim().toLowerCase() === me;
+    });
+
+    // Search filter — match the query against any field value
+    const q = (document.getElementById('recordSearch').value || '').trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(r =>
+        Object.values(r.data || {}).some(v => String(v).toLowerCase().includes(q))
+      );
+    }
+
+    count.textContent = rows.filter(r => !r.deleted).length;
+
+    if (!rows.length) {
+      list.innerHTML = `<div class="empty-entries">${q ? 'No records match your search.' : 'No records yet. Submit a transaction to see it here.'}</div>`;
       return;
     }
 
-    const receiptField = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.name));
+    const receiptField = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.label || f.name));
 
-    list.innerHTML = serverRows.map(r => {
+    list.innerHTML = rows.map(r => {
       const d      = r.data || {};
-      const dateF  = schemaFields.find(f => isDateField(f.name)   && d[f.name]);
-      const amtF   = schemaFields.find(f => isNumberField(f.name) && d[f.name]);
-      const entByF = schemaFields.find(f => isEnteredByFld(f.name) && d[f.name]);
+      const dateF  = schemaFields.find(f => isDateField(f.label || f.name)   && d[f.name]);
+      const amtF   = schemaFields.find(f => isNumberField(f.label || f.name) && d[f.name]);
+      const entByF = schemaFields.find(f => isEnteredByFld(f.label || f.name) && d[f.name]);
       const fileUrls = receiptField && d[receiptField.name]
         ? String(d[receiptField.name]).split(',').map(s => s.trim()).filter(Boolean)
         : [];
@@ -1101,7 +1150,7 @@
           <div class="entry-fields">
             ${bodyFields.map(f => `
               <div class="entry-kv">
-                <span class="entry-k">${escH(f.name)}</span>
+                <span class="entry-k">${escH(f.label || f.name)}</span>
                 <span class="entry-v">${escH(d[f.name])}</span>
               </div>
             `).join('')}
@@ -1113,6 +1162,7 @@
   }
 
   document.getElementById('refreshBtn').addEventListener('click', loadRecords);
+  document.getElementById('recordSearch').addEventListener('input', renderRecords);
 </script>
 </body>
 </html>
