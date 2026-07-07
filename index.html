@@ -466,11 +466,14 @@
   }
 
   // ── Reserve a unique sequential ID for a new record ────────────────────────
+  // Retries a few times so a flaky connection doesn't force the timestamp fallback.
   async function reserveId() {
-    try {
-      const json = await jsonp({ action: 'nextid' });
-      if (json.status === 'success') return json.id;
-    } catch (err) { /* fall through */ }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const json = await jsonp({ action: 'nextid' });
+        if (json.status === 'success') return json.id;
+      } catch (err) { /* retry */ }
+    }
     return Date.now();
   }
 
