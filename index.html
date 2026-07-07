@@ -1014,10 +1014,11 @@
       const el = document.getElementById(`f_${colIndex}`);
       if (!el) return;
       let val = el.value.trim();
-      // Convert date to DD-MM-YYYY for the sheet
+      // Convert date to DD-MMM-YYYY (e.g. 01-Jul-2026) — unambiguous in any sheet locale
       if (el.type === 'date' && val) {
         const [y, m, d] = val.split('-');
-        val = `${d}-${m}-${y}`;
+        const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m - 1] || m;
+        val = `${d}-${mon}-${y}`;
       }
       payload[name] = val;
     });
