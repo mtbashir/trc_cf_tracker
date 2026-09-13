@@ -1083,7 +1083,9 @@
 
   async function loadRecords() {
     try {
-      const json = await jsonp({ action: 'records' });
+      // Ask the backend for this user's own records only (it returns their latest 100).
+      // The client-side filter in renderRecords() stays as a safety net for older backends.
+      const json = await jsonp({ action: 'records', user: currentUser });
       if (json.status === 'success') {
         serverRows = json.rows || [];
         renderRecords();
