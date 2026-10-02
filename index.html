@@ -502,6 +502,25 @@
     return isNaN(n) ? String(v) : n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
   }
 
+  // Parse the date formats that can appear in the sheet, for sorting records.
+  // Returns a sortable number, or null when the value isn't a recognisable date.
+  const MONTH_IDX = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+  function parseRecDate(v) {
+    const s = String(v || '').trim();
+    if (!s) return null;
+    let m;
+    // 01-Jul-2026
+    if ((m = s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,})[-\/ ](\d{4})$/))) {
+      const mo = MONTH_IDX[m[2].slice(0, 3).toLowerCase()];
+      if (mo !== undefined) return Date.UTC(+m[3], mo, +m[1]);
+    }
+    // 2026-07-01
+    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    // 01-07-2026 / 01/07/2026 — day first
+    if ((m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/))) return Date.UTC(+m[3], +m[2] - 1, +m[1]);
+    return null;
+  }
+
   // ── Branding (app title/subtitle) — configurable via KEYS sheet ────────────
   // KEYS columns: _APP_TITLE (single value) and _APP_SUBTITLE (single value)
   function applyBranding(data) {
@@ -1121,6 +1140,14 @@
         Object.values(r.data || {}).some(v => String(v).toLowerCase().includes(q))
       );
     }
+
+    // Newest first — by entry date, falling back to sheet order for same-day entries
+    const dateFld = schemaFields.find(f => isDateField(f.label || f.name));
+    const recTime = r => {
+      const t = dateFld ? parseRecDate((r.data || {})[dateFld.name]) : null;
+      return t === null ? -Infinity : t;   // undated rows sink to the bottom
+    };
+    rows = rows.slice().sort((a, b) => (recTime(b) - recTime(a)) || (b.row - a.row));
 
     count.textContent = rows.filter(r => !r.deleted).length;
 
