@@ -695,17 +695,57 @@
     });
   }
 
+  // A combo field is list-driven: ONLY values from its KEYS list may be submitted.
+  // Returns the canonical option matching v (case/space-insensitive), else null.
+  function comboMatch(fid, v) {
+    const s = String(v || '').trim().toLowerCase();
+    if (!s) return null;
+    const opts = comboOptionsByFid[fid] || [];
+    return opts.find(o => String(o).trim().toLowerCase() === s) || null;
+  }
+
+  function markInvalid(el, show) {
+    const errEl = document.getElementById('e_' + el.id.slice(2));
+    el.classList.toggle('invalid', !!show);
+    if (errEl) errEl.classList.toggle('show', !!show);
+  }
+
   function setupCombo(el, listEl, fid) {
-    el.addEventListener('focus', () => {
-      renderComboList(el, listEl, fid);
-      listEl.classList.add('show');
+    const openList = () => { renderComboList(el, listEl, fid); listEl.classList.add('show'); };
+    el.addEventListener('focus', openList);
+    el.addEventListener('input', openList);
+
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        // Enter picks the top match rather than leaving half-typed text behind
+        e.preventDefault();
+        const first = listEl.querySelector('.combo-option');
+        if (first) {
+          el.value = first.textContent;
+          listEl.classList.remove('show');
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else if (e.key === 'Escape') {
+        listEl.classList.remove('show');
+      }
     });
-    el.addEventListener('input', () => {
-      renderComboList(el, listEl, fid);
-      listEl.classList.add('show');
-    });
+
     el.addEventListener('blur', () => {
-      setTimeout(() => listEl.classList.remove('show'), 150);
+      // Delay so a click on an option lands before we judge the typed text
+      setTimeout(() => {
+        listEl.classList.remove('show');
+        const typed = el.value.trim();
+        if (!typed) return;
+        const canon = comboMatch(fid, typed);
+        if (canon) {
+          el.value = canon;            // normalise casing to the KEYS value
+          markInvalid(el, false);
+        } else {
+          el.value = '';               // free text is not allowed in a list field
+          markInvalid(el, true);
+          toast('Pick a value from the list', 'fail');
+        }
+      }, 150);
     });
   }
 
@@ -922,8 +962,19 @@
     let ok = true;
     schemaFields.forEach(({ name, label, colIndex }) => {
       const el = document.getElementById(`f_${colIndex}`);
-      if (!el || el.dataset.required !== 'true') return;
+      if (!el) return;
       const val = el.value.trim();
+
+      // List-driven field: whatever is in it must come from the KEYS list.
+      // This is the last line of defence against free text reaching the sheet.
+      if (el.dataset.combo === 'true' && val && !comboMatch(`f_${colIndex}`, val)) {
+        markInvalid(el, true);
+        if (ok) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ok = false;
+        return;
+      }
+
+      if (el.dataset.required !== 'true') return;
       const bad = !val || (isNumberField(label || name) && isNaN(parseFloat(val)));
       if (bad) {
         el.classList.add('invalid');
