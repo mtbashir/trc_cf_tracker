@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CF Tracker">
+  <meta name="theme-color" content="#1A237E">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <title>TRC CASHFLOW TRACKER</title>
+  <style>
+    :root {
+      --primary:       #1A237E;
+      --primary-mid:   #283593;
+      --primary-light: #3949AB;
+      --bg:            #ECEEF6;
+      --card:          #FFFFFF;
+      --text:          #1C1C1E;
+      --muted:         #6B7280;
+      --border:        #CBD5E1;
+      --border-focus:  #3949AB;
+      --error:         #DC2626;
+      --success:       #15803D;
+      --radius:        10px;
+      --shadow:        0 1px 4px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Login ── */
+    #loginScreen {
+      position: fixed; inset: 0;
+      background: var(--primary);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; z-index: 200;
+    }
+    .login-brand { text-align: center; color: #fff; margin-bottom: 28px; }
+    .login-icon {
+      width: 60px; height: 60px;
+      background: rgba(255,255,255,0.15); border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 12px;
+    }
+    .login-brand h1 { font-size: 22px; font-weight: 800; letter-spacing: 0.5px; }
+    .login-brand p  { font-size: 13px; opacity: 0.7; margin-top: 4px; }
+    .login-card {
+      width: 100%; max-width: 360px;
+      background: #fff; border-radius: 16px;
+      padding: 28px 24px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .login-card label { display: block; font-size: 12px; font-weight: 600; color: var(--primary-mid); margin-bottom: 5px; }
+    .login-card input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 16px; outline: none; color: var(--text);
+      transition: border-color 0.18s;
+    }
+    .login-card input:focus { border-color: var(--border-focus); }
+    .login-gap { height: 14px; }
+    .login-err {
+      margin-top: 12px; padding: 10px 12px;
+      background: #FEF2F2; border: 1px solid #FECACA;
+      border-radius: 8px; font-size: 13px; color: var(--error);
+    }
+    .btn-login {
+      width: 100%; margin-top: 18px; padding: 14px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.4px;
+    }
+    .btn-login:disabled { background: var(--muted); cursor: not-allowed; }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary); color: #fff;
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
+    header p  { font-size: 11px; opacity: 0.7; margin-top: 1px; }
+    .logout-btn {
+      background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 8px; padding: 6px 12px;
+      font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+    .logout-btn:active { background: rgba(255,255,255,0.25); }
+
+    /* ── Layout ── */
+    .wrap { max-width: 520px; margin: 0 auto; padding: 14px 14px 40px; }
+
+    /* ── Banners ── */
+    #loadBanner {
+      display: flex; align-items: center; gap: 10px;
+      background: #EEF2FF; border: 1px solid #C7D2FE;
+      border-radius: var(--radius); padding: 12px 14px;
+      margin-bottom: 12px; font-size: 13px;
+      color: var(--primary-mid); font-weight: 500;
+    }
+    #loadBanner.hidden { display: none; }
+    #errBanner {
+      display: none; background: #FEF2F2;
+      border: 1px solid #FECACA; border-radius: var(--radius);
+      padding: 14px; margin-bottom: 12px;
+      font-size: 13px; color: var(--error);
+    }
+    #errBanner strong { display: block; margin-bottom: 6px; font-size: 14px; }
+    #errBanner .err-steps { color: #7F1D1D; line-height: 1.7; font-size: 12px; }
+    #errBanner .err-detail { margin-top: 6px; font-size: 12px; color: #991B1B; word-break: break-word; }
+    #errBanner button {
+      margin-top: 10px; padding: 7px 16px;
+      border: 1.5px solid var(--error); border-radius: 6px;
+      background: transparent; color: var(--error);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--primary-light);
+      margin-bottom: 14px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--bg);
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: var(--primary-mid); margin-bottom: 5px;
+    }
+    label .req { color: var(--error); margin-left: 1px; }
+    label .opt { color: var(--muted); font-weight: 400; }
+
+    input[type="date"], input[type="number"], input[type="text"],
+    input[type="email"], input[type="password"], select, textarea {
+      width: 100%; padding: 12px 13px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 15px; color: var(--text); background: #FAFBFF;
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      -webkit-appearance: none; appearance: none;
+    }
+    select {
+      padding-right: 36px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      cursor: pointer;
+    }
+    .amount-input {
+      font-size: 22px !important; font-weight: 700;
+      color: var(--primary); padding: 14px 13px;
+      letter-spacing: 0.5px;
+    }
+    textarea { resize: none; height: 76px; line-height: 1.5; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(57,73,171,0.12);
+      background: #fff;
+    }
+    input.invalid, select.invalid, textarea.invalid {
+      border-color: var(--error); background: #FFF8F8;
+    }
+    .err-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
+    .err-msg.show { display: block; }
+
+    /* ── Tile picker ── */
+    .tgroup {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; margin-bottom: 10px;
+      scroll-margin-top: 70px;
+    }
+    .tgroup-head {
+      width: 100%; background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 13px; text-align: left; color: var(--text);
+      font-family: inherit;
+    }
+    .tstep {
+      flex: none; width: 22px; height: 22px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: #FAFBFF; color: var(--muted);
+      border: 1.5px solid var(--border);
+      font-size: 11px; font-weight: 700;
+    }
+    .tgroup[data-done="1"] .tstep { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tgroup-label {
+      flex: 1; min-width: 0;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.1px;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .tgroup-pick { font-size: 13px; font-weight: 700; color: var(--primary); text-align: right; overflow-wrap: anywhere; }
+    .tgroup[data-done="0"] .tgroup-pick { display: none; }
+    .tcaret { flex: none; color: var(--muted); font-size: 10px; transition: transform .15s; }
+    .tgroup[data-open="1"] .tcaret { transform: rotate(180deg); }
+    .tiles { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); padding: 0 13px 13px; }
+    .tiles.wide { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); }
+    .tgroup[data-open="0"] .tiles { display: none; }
+    .tile {
+      position: relative; background: #FAFBFF; color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 12px 8px; min-height: 56px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      font-size: 13.5px; font-weight: 700; letter-spacing: .3px; text-align: center;
+      cursor: pointer; font-family: inherit;
+    }
+    .tile:active { transform: scale(.975); }
+    .tile[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tile[aria-pressed="true"]::after { content: "✓"; position: absolute; top: 4px; right: 6px; font-size: 10px; }
+    .tile .dir { font-size: 10px; font-weight: 600; }
+    .tile[data-dir="in"]  .dir { color: var(--success); }
+    .tile[data-dir="out"] .dir { color: #C2410C; }
+    .tile[aria-pressed="true"] .dir { color: rgba(255,255,255,.85); }
+
+    /* Chips summarising the tile answers on the form screen */
+    .chips {
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 11px; margin-bottom: 12px;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #EEF2FF; color: var(--primary);
+      border-radius: 99px; padding: 4px 10px; font-size: 11.5px; font-weight: 700;
+    }
+    .chip .k { font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; opacity: .62; }
+    .chip-change {
+      margin-left: auto; background: none; border: none; color: var(--primary);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+
+    /* Background upload indicator */
+    .upchip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 99px; padding: 6px 10px; margin-right: 7px;
+      font-size: 11px; font-weight: 600; cursor: default; white-space: nowrap;
+    }
+    .upchip.bad { background: var(--error); border-color: var(--error); cursor: pointer; }
+    .upsp {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+      animation: spin .7s linear infinite;
+    }
+    .hdr-right { display: flex; align-items: center; }
+
+    /* ── Searchable combo dropdown ── */
+    .combo-wrap { position: relative; }
+    .combo-list {
+      position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+      max-height: 200px; overflow-y: auto;
+      background: #fff; border: 1.5px solid var(--border); border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      z-index: 50; display: none;
+    }
+    .combo-list.show { display: block; }
+    .combo-option { padding: 10px 13px; font-size: 14px; cursor: pointer; }
+    .combo-option:hover, .combo-option.active { background: #EEF2FF; }
+    .combo-empty { padding: 10px 13px; font-size: 13px; color: var(--muted); }
+
+    /* ── Submit ── */
+    .btn-submit {
+      width: 100%; padding: 15px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 700; letter-spacing: 0.4px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 3px 10px rgba(26,35,126,0.35);
+      transition: background 0.18s, transform 0.1s;
+    }
+    .btn-submit:active:not(:disabled) { transform: scale(0.98); }
+    .btn-submit:disabled { background: var(--muted); box-shadow: none; cursor: not-allowed; }
+
+    /* ── Spinners ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.65s linear infinite; flex-shrink: 0;
+    }
+    .spinner.dark {
+      border-color: rgba(26,35,126,0.2); border-top-color: var(--primary);
+      width: 14px; height: 14px;
+    }
+
+    /* ── File Upload ── */
+    .file-upload-label {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 14px;
+      border: 1.5px dashed var(--border); border-radius: 8px;
+      background: #FAFBFF; cursor: pointer;
+      font-size: 14px; color: var(--muted);
+      transition: border-color 0.18s, background 0.18s;
+      user-select: none;
+    }
+    .file-upload-label:active { border-color: var(--border-focus); background: #EEF2FF; }
+    .file-upload-label.has-file { border-color: var(--success); color: var(--success); background: #F0FDF4; }
+    .file-icon { font-size: 18px; flex-shrink: 0; }
+    #billFile { display: none; }
+    .file-chosen { margin-top: 5px; font-size: 11px; color: var(--success); word-break: break-all; }
+    .file-list { margin-bottom: 8px; }
+    .file-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 12px; margin-bottom: 6px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: #F0FDF4; font-size: 12px; color: var(--success);
+    }
+    .file-item-name { word-break: break-all; flex: 1; }
+    .file-remove {
+      flex-shrink: 0; border: none; background: none; cursor: pointer;
+      font-size: 14px; color: var(--muted); line-height: 1; padding: 2px 4px;
+    }
+    .file-remove:active { color: #DC2626; }
+
+    /* ── Entries ── */
+    .entries-header {
+      display: flex; align-items: center; gap: 8px;
+      margin: 20px 0 10px;
+      font-size: 13px; font-weight: 700; color: var(--primary-mid);
+      text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    .badge {
+      background: var(--primary); color: #fff;
+      border-radius: 100px; font-size: 11px; font-weight: 700;
+      padding: 1px 7px; min-width: 20px; text-align: center;
+    }
+    .refresh-btn {
+      margin-left: auto; background: none; border: none;
+      color: var(--primary-mid); font-size: 16px;
+      cursor: pointer; padding: 2px 4px; line-height: 1;
+    }
+    .refresh-btn:active { transform: rotate(180deg); }
+    .entry-card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 14px;
+      margin-bottom: 10px; position: relative;
+      transition: opacity 0.2s;
+    }
+    .entry-card.deleted { opacity: 0.45; }
+    .entry-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 8px; margin-bottom: 8px;
+    }
+    .entry-meta { font-size: 11px; color: var(--muted); line-height: 1.6; }
+    .entry-meta strong { color: var(--text); font-size: 13px; }
+    .entry-amount { font-size: 20px; font-weight: 800; color: var(--primary); white-space: nowrap; }
+    .entry-fields { margin-top: 4px; }
+    .entry-kv {
+      display: flex; justify-content: space-between;
+      align-items: baseline; gap: 8px;
+      font-size: 12px; padding: 4px 0;
+      border-bottom: 1px solid var(--bg);
+    }
+    .entry-kv:last-child { border-bottom: none; }
+    .entry-k { color: var(--muted); font-weight: 500; flex-shrink: 0; }
+    .entry-v { color: var(--text); font-weight: 600; text-align: right; word-break: break-word; max-width: 65%; }
+    .delete-btn {
+      position: absolute; top: 12px; right: 12px;
+      background: none; border: none;
+      color: #CBD5E1; font-size: 16px;
+      cursor: pointer; padding: 4px; line-height: 1;
+      transition: color 0.15s;
+    }
+    .delete-btn:active { color: var(--error); }
+    .deleted-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: var(--error); background: #FEE2E2;
+      border-radius: 4px; padding: 2px 6px; margin-left: 6px;
+      vertical-align: middle; text-transform: uppercase;
+    }
+    .id-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      color: var(--primary-mid); background: var(--bg);
+      border-radius: 4px; padding: 2px 6px; margin-right: 4px;
+      vertical-align: middle;
+    }
+    .empty-entries { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+    .receipt-link {
+      display: inline-block; margin-top: 6px;
+      font-size: 12px; color: var(--primary-light);
+      text-decoration: none; font-weight: 600;
+    }
+    .receipt-link:active { text-decoration: underline; }
+    .receipt-links { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(90px);
+      padding: 12px 22px; border-radius: 100px;
+      font-size: 14px; font-weight: 600; color: #fff;
+      z-index: 999;
+      transition: transform 0.32s cubic-bezier(.34,1.56,.64,1), opacity 0.2s;
+      opacity: 0; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.ok   { background: var(--success); }
+    .toast.fail { background: var(--error); }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen">
+  <div class="login-brand">
+    <div class="login-icon">₨</div>
+    <h1 id="loginTitle">TRC CASHFLOW TRACKER</h1>
+    <p id="loginSubtitle">Records All Transactions</p>
+  </div>
+  <div class="login-card">
+    <div class="field">
+      <label for="loginUser">Username</label>
+      <input type="text" id="loginUser" placeholder="Enter your username"
+             autocapitalize="none" autocomplete="username">
+    </div>
+    <div class="login-gap"></div>
+    <div class="field">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" placeholder="Enter your password"
+             autocomplete="current-password">
+    </div>
+    <div id="loginErr" class="login-err" style="display:none;"></div>
+    <button class="btn-login" id="loginBtn">Login</button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="appScreen" style="display:none;">
+  <header>
+    <div>
+      <h1 id="headerTitle">TRC CF Tracker</h1>
+      <p>New Transaction</p>
+    </div>
+    <div class="hdr-right">
+      <button class="upchip" id="upChip" type="button" style="display:none"></button>
+      <button class="logout-btn" id="logoutBtn">
+        <span id="headerUser"></span> · Logout
+      </button>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <div id="loadBanner">
+      <span class="spinner dark"></span>
+      Loading form from sheet…
+    </div>
+
+    <div id="errBanner">
+      <strong>Could not load form</strong>
+      <div class="err-steps">
+        1. Check that <b>Sheet1</b> has column headers in row 1<br>
+        2. Check that the <b>KEYS</b> tab exists in your Google Sheet<br>
+        3. Make sure Apps Script is deployed as a <b>New version</b>
+      </div>
+      <div class="err-detail" id="errDetail"></div>
+      <button onclick="loadSchemaAndKeys()">↺ Retry</button>
+    </div>
+
+    <!-- Step 1: tile picker, built from the KEYS lists -->
+    <div id="tileScreen" style="display:none;">
+      <div id="tileHost"></div>
+      <button type="button" class="btn-submit" id="continueBtn" disabled>Continue</button>
+    </div>
+
+    <form id="form" novalidate style="display:none;">
+
+      <div class="chips" id="chipBar"></div>
+      <div id="hiddenFields" style="display:none"></div>
+
+      <!-- Dynamic fields injected here -->
+      <div class="card" id="fieldsCard" style="display:none;">
+        <div class="card-title">Remaining details</div>
+        <div id="dynamicFields"></div>
+      </div>
+
+      <!-- Receipt upload — always shown after fields -->
+      <div class="card" id="uploadCard" style="display:none;">
+        <div class="card-title">Attachment</div>
+        <div class="field">
+          <label>Receipt / Bill <span class="opt">(optional)</span></label>
+          <div class="file-list" id="fileList"></div>
+          <label class="file-upload-label" for="billFile">
+            <span class="file-icon">📎</span>
+            <span id="filePickerText">Tap to attach photo or PDF</span>
+          </label>
+          <input type="file" id="billFile" accept="image/*,.pdf">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submitBtn" disabled>
+        Submit Transaction
+      </button>
+    </form>
+
+    <div class="entries-header">
+      <span>Recent Records</span>
+      <span class="badge" id="entriesCount">0</span>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh">↺</button>
+    </div>
+    <input type="text" id="recordSearch" placeholder="🔍 Search records — amount, shop, type…" autocomplete="off" style="margin-bottom:12px;">
+    <div id="entriesList"></div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbxlETGLSls6bxAvy1811cExWg6L-YMZYmaYFTFwHrwLORvxia_uOxd_5Ya8q2jvyOVw/exec';
+  const USER_KEY    = 'trc_last_user';
+
+  let schemaFields   = [];  // [{name, colIndex, optional}, ...]
+  let keysData       = {};  // {ColumnName: [val1, val2, ...], ...}
+  let optionalFields = new Set();
+  let conditions     = [];  // [{field, triggerField, triggerValues, options}, ...]
+  let conditionalUpdaters = [];
+  let comboOptionsByFid = {};  // {fid: [option, ...]} — current option list for searchable combo fields
+  let tileDefs    = [];        // [{label, colIndex, values, wide}] — fields answered as tiles
+  let uploadJobs  = [];        // background receipt uploads still in flight
+  // Fields answered as tiles on the first screen. Override with a _TILES column in KEYS.
+  const TILE_DEFAULT = ['Shop', 'Nature', 'Type', 'Paid To Type', 'Paid By', 'Payment Mode'];
+  // Nature is the one list whose values carry a direction, so the tiles show it
+  const CASH_DIR = { PAID: 'out', PAYABLE: 'out', RECEIVED: 'in', RECEIVABLE: 'in' };
+  let currentUser    = '';
+
+  // ── JSONP ──────────────────────────────────────────────────────────────────
+  function jsonp(params, ms) {
+    return new Promise((resolve, reject) => {
+      const cb    = '_cb' + Date.now() + Math.floor(Math.random() * 1e6);
+      const sc    = document.createElement('script');
+      const timer = setTimeout(() => { cleanup(); reject(new Error('Request timed out')); }, ms || 20000);
+      function cleanup() { clearTimeout(timer); delete window[cb]; sc.parentNode && sc.parentNode.removeChild(sc); }
+      window[cb] = d => { cleanup(); resolve(d); };
+      sc.onerror = () => { cleanup(); reject(new Error('Network error — could not reach Apps Script.')); };
+      sc.src = SCRIPT_URL + '?' + new URLSearchParams(Object.assign({}, params, { callback: cb }));
+      document.head.appendChild(sc);
+    });
+  }
+
+  // ── Reserve a unique sequential ID for a new record ────────────────────────
+  // Retries a few times so a flaky connection doesn't force the timestamp fallback.
+  async function reserveId() {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const json = await jsonp({ action: 'nextid' });
+        if (json.status === 'success') return json.id;
+      } catch (err) { /* retry */ }
+    }
+    return Date.now();
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = 'toast ' + (type || '');
+    clearTimeout(toastTimer);
+    requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── Field-type helpers ─────────────────────────────────────────────────────
+  function isDateField    (n) { return /date/i.test(n); }
+  function isNumberField  (n) { return /amount|price|cost|total|qty|quantity/i.test(n); }
+  function isTextareaField(n) { return /details|remarks|notes|description|comment|reason|purpose|narration/i.test(n); }
+  function isEnteredByFld (n) { return /entered.?by|entry.?by/i.test(n); }
+
+  function escH(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmtAmt(v) {
+    const n = parseFloat(v);
+    return isNaN(n) ? String(v) : n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+
+  // Parse the date formats that can appear in the sheet, for sorting records.
+  // Returns a sortable number, or null when the value isn't a recognisable date.
+  const MONTH_IDX = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+  function parseRecDate(v) {
+    const s = String(v || '').trim();
+    if (!s) return null;
+    let m;
+    // 01-Jul-2026
+    if ((m = s.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,})[-\/ ](\d{4})$/))) {
+      const mo = MONTH_IDX[m[2].slice(0, 3).toLowerCase()];
+      if (mo !== undefined) return Date.UTC(+m[3], mo, +m[1]);
+    }
+    // 2026-07-01
+    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
+    // 01-07-2026 / 01/07/2026 — day first
+    if ((m = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/))) return Date.UTC(+m[3], +m[2] - 1, +m[1]);
+    return null;
+  }
+
+  // ── Branding (app title/subtitle) — configurable via KEYS sheet ────────────
+  // KEYS columns: _APP_TITLE (single value) and _APP_SUBTITLE (single value)
+  function applyBranding(data) {
+    const title    = (data['_APP_TITLE']    || [])[0];
+    const subtitle = (data['_APP_SUBTITLE'] || [])[0];
+    if (title) {
+      document.title = title;
+      const lt = document.getElementById('loginTitle');
+      const ht = document.getElementById('headerTitle');
+      if (lt) lt.textContent = title;
+      if (ht) ht.textContent = title;
+    }
+    if (subtitle) {
+      const ls = document.getElementById('loginSubtitle');
+      if (ls) ls.textContent = subtitle;
+    }
+  }
+
+  // ══ LOGIN ════════════════════════════════════════════════════════════════
+  (function() {
+    // Apply custom branding from KEYS sheet even before login
+    jsonp({ action: 'keys' }).then(json => {
+      if (json.status === 'success') applyBranding(json.data || {});
+    }).catch(() => {});
+
+    const cur = sessionStorage.getItem('trc_user');
+    if (cur) { launchApp(cur); return; }
+    const last = localStorage.getItem(USER_KEY);
+    if (last) document.getElementById('loginUser').value = last;
+  })();
+
+  function doLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    const btn  = document.getElementById('loginBtn');
+    const err  = document.getElementById('loginErr');
+    if (!user || !pass) { showLoginErr('Enter both username and password.'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verifying…';
+    err.style.display = 'none';
+    jsonp({ action: 'login', user, password: pass }, 15000)
+      .then(json => {
+        if (json.status === 'success') {
+          sessionStorage.setItem('trc_user', json.user);
+          localStorage.setItem(USER_KEY, json.user);
+          launchApp(json.user);
+        } else {
+          showLoginErr(json.message || 'Login failed.');
+          btn.disabled = false; btn.textContent = 'Login';
+        }
+      })
+      .catch(e => { showLoginErr(e.message); btn.disabled = false; btn.textContent = 'Login'; });
+  }
+
+  function showLoginErr(msg) {
+    const e = document.getElementById('loginErr');
+    e.textContent = msg; e.style.display = 'block';
+  }
+
+  function launchApp(user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display   = 'block';
+    document.getElementById('headerUser').textContent    = user;
+    initApp(user);
+  }
+
+  function doLogout() { sessionStorage.removeItem('trc_user'); location.reload(); }
+
+  document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('logoutBtn').addEventListener('click', doLogout);
+
+  // ══ APP INIT ═════════════════════════════════════════════════════════════
+  function initApp(user) {
+    currentUser = user;
+    loadRecords();
+    loadSchemaAndKeys(user);
+  }
+
+  async function loadSchemaAndKeys(user) {
+    document.getElementById('loadBanner').classList.remove('hidden');
+    document.getElementById('errBanner').style.display  = 'none';
+    document.getElementById('fieldsCard').style.display = 'none';
+    document.getElementById('uploadCard').style.display = 'none';
+    document.getElementById('submitBtn').disabled = true;
+
+    try {
+      // Load schema (Sheet1 headers), keys (dropdown lists) and conditions in parallel
+      const [schemaRes, keysRes, condRes] = await Promise.all([
+        jsonp({ action: 'schema' }),
+        jsonp({ action: 'keys'   }),
+        jsonp({ action: 'conditions' })
+      ]);
+
+      if (schemaRes.status !== 'success') throw new Error('Schema: ' + schemaRes.message);
+      if (keysRes.status   !== 'success') throw new Error('Keys: '   + keysRes.message);
+      if (!schemaRes.fields || !schemaRes.fields.length)
+        throw new Error('Sheet1 has no column headers. Add headers to row 1.');
+
+      // A leading "*" on a column header (in Sheet1 or KEYS) marks that field MANDATORY.
+      // `name` keeps the raw header (used for reading/writing sheet data);
+      // `label` is the clean display name (used for UI, lookups and matching).
+      const stripStar = s => String(s || '').replace(/^\s*\*\s*/, '');
+      const isStarred = s => /^\s*\*/.test(String(s || ''));
+      const starred   = new Set();
+
+      schemaFields = schemaRes.fields.map(f => {
+        const label = stripStar(f.name);
+        if (isStarred(f.name)) starred.add(label.toLowerCase());
+        return Object.assign({}, f, { label });
+      });
+
+      const rawKeys = keysRes.data || {};
+      keysData = {};
+      Object.keys(rawKeys).forEach(k => {
+        const ck = stripStar(k);
+        if (isStarred(k)) starred.add(ck.toLowerCase());
+        keysData[ck] = rawKeys[k];
+      });
+
+      conditions = ((condRes && condRes.status === 'success') ? (condRes.conditions || []) : [])
+        .map(c => Object.assign({}, c, { field: stripStar(c.field), triggerField: stripStar(c.triggerField) }));
+
+      // If any header is starred, use the asterisk convention: starred = mandatory, everything else optional.
+      // Otherwise fall back to the old _OPTIONAL list (all fields mandatory unless listed there).
+      if (starred.size) {
+        optionalFields = new Set(schemaFields.filter(f => !starred.has(f.label.toLowerCase())).map(f => f.label));
+      } else {
+        optionalFields = new Set((keysData['_OPTIONAL'] || []).map(stripStar));
+      }
+      applyBranding(keysData);
+
+      buildForm(user || currentUser);
+      renderRecords();  // re-render now that schema (Entered By field) is known
+
+      document.getElementById('loadBanner').classList.add('hidden');
+      document.getElementById('fieldsCard').style.display = '';
+      document.getElementById('uploadCard').style.display = '';
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('tileScreen').style.display = '';
+      showStep(tileDefs.length ? 'tiles' : 'form');
+    } catch (err) {
+      document.getElementById('loadBanner').classList.add('hidden');
+      document.getElementById('errBanner').style.display = 'block';
+      document.getElementById('errDetail').textContent   = 'Error: ' + err.message;
+    }
+  }
+
+  // ── Searchable combo dropdown helpers ───────────────────────────────────────
+  function renderComboList(el, listEl, fid) {
+    const opts = comboOptionsByFid[fid] || [];
+    const q = (el.value || '').trim().toLowerCase();
+    const filtered = q ? opts.filter(o => o.toLowerCase().includes(q)) : opts;
+    listEl.innerHTML = '';
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'combo-empty';
+      empty.textContent = 'No matches';
+      listEl.appendChild(empty);
+      return;
+    }
+    filtered.forEach(o => {
+      const item = document.createElement('div');
+      item.className = 'combo-option';
+      item.textContent = o;
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        el.value = o;
+        listEl.classList.remove('show');
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      listEl.appendChild(item);
+    });
+  }
+
+  // A combo field is list-driven: ONLY values from its KEYS list may be submitted.
+  // Returns the canonical option matching v (case/space-insensitive), else null.
+  function comboMatch(fid, v) {
+    const s = String(v || '').trim().toLowerCase();
+    if (!s) return null;
+    const opts = comboOptionsByFid[fid] || [];
+    return opts.find(o => String(o).trim().toLowerCase() === s) || null;
+  }
+
+  function markInvalid(el, show) {
+    const errEl = document.getElementById('e_' + el.id.slice(2));
+    el.classList.toggle('invalid', !!show);
+    if (errEl) errEl.classList.toggle('show', !!show);
+  }
+
+  function setupCombo(el, listEl, fid) {
+    const openList = () => { renderComboList(el, listEl, fid); listEl.classList.add('show'); };
+    el.addEventListener('focus', openList);
+    el.addEventListener('input', openList);
+
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        // Enter picks the top match rather than leaving half-typed text behind
+        e.preventDefault();
+        const first = listEl.querySelector('.combo-option');
+        if (first) {
+          el.value = first.textContent;
+          listEl.classList.remove('show');
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else if (e.key === 'Escape') {
+        listEl.classList.remove('show');
+      }
+    });
+
+    el.addEventListener('blur', () => {
+      // Delay so a click on an option lands before we judge the typed text
+      setTimeout(() => {
+        listEl.classList.remove('show');
+        const typed = el.value.trim();
+        if (!typed) return;
+        const canon = comboMatch(fid, typed);
+        if (canon) {
+          el.value = canon;            // normalise casing to the KEYS value
+          markInvalid(el, false);
+        } else {
+          el.value = '';               // free text is not allowed in a list field
+          markInvalid(el, true);
+          toast('Pick a value from the list', 'fail');
+        }
+      }, 150);
+    });
+  }
+
+  // ── Build form dynamically from schema ────────────────────────────────────
+  function buildForm(user) {
+    const container  = document.getElementById('dynamicFields');
+    container.innerHTML = '';
+    conditionalUpdaters = [];
+    comboOptionsByFid = {};
+    const loggedUser = user || sessionStorage.getItem('trc_user') || '';
+
+    // Map field name -> list of conditions that control its visibility
+    const condByField = {};
+    conditions.forEach(c => {
+      if (!condByField[c.field]) condByField[c.field] = [];
+      condByField[c.field].push(c);
+    });
+    const baseValuesByField = {};
+
+    // A field is answered by tiles when it is named in _TILES (or the default list),
+    // has its own KEYS values, and isn't conditional or auto-filled.
+    const wanted = (keysData['_TILES'] || []).map(v => String(v).trim()).filter(Boolean);
+    const tileNames = (wanted.length ? wanted : TILE_DEFAULT).map(v => v.toLowerCase());
+    const isTileField = (lbl, vals) =>
+      tileNames.indexOf(lbl.toLowerCase()) !== -1 && vals.length &&
+      !condByField[lbl] && !isEnteredByFld(lbl);
+
+    tileDefs = [];
+    document.getElementById('hiddenFields').innerHTML = '';
+
+    schemaFields.forEach(field => {
+      const { name, colIndex } = field;
+      const label0 = field.label || name;
+      const values = (keysData[label0] || []).filter(Boolean);
+      baseValuesByField[label0] = values;
+      // Conditional dropdown options are applied per-trigger-value at runtime (see update below)
+      const hasConditionalOptions = (condByField[label0] || []).some(c => (c.options || []).length > 0);
+      const optional = optionalFields.has(label0);
+      const fid      = `f_${colIndex}`;
+
+      // Tile fields keep a hidden input under the same id, so validation, the payload,
+      // the conditional rules and resetForm all keep working exactly as before.
+      if (isTileField(label0, values)) {
+        const h = document.createElement('input');
+        h.type = 'hidden';
+        h.id = fid;
+        h.dataset.fieldName = name;
+        h.dataset.required  = optional ? '' : 'true';
+        document.getElementById('hiddenFields').appendChild(h);
+        tileDefs.push({
+          label: label0, colIndex, values,
+          wide: values.some(v => String(v).length > 9)
+        });
+        return;
+      }
+
+      // ── Create the appropriate input element ──
+      let el;
+      if ((values.length || hasConditionalOptions) && isEnteredByFld(label0)) {
+        // Dropdown — KEYS has values for this column name
+        el = document.createElement('select');
+        const blank = document.createElement('option');
+        blank.value = ''; blank.textContent = '— select —';
+        el.appendChild(blank);
+        values.forEach(v => {
+          const o = document.createElement('option');
+          o.value = o.textContent = v;
+          el.appendChild(o);
+        });
+        // Auto-set "Entered By"-style fields from the logged-in username and lock them
+        const match = Array.from(el.options)
+          .find(o => o.value.toLowerCase() === loggedUser.toLowerCase());
+        if (match) {
+          el.value = match.value;
+        } else if (loggedUser) {
+          const o = document.createElement('option');
+          o.value = o.textContent = loggedUser;
+          el.appendChild(o);
+          el.value = loggedUser;
+        }
+        el.disabled = true;
+      } else if (values.length || hasConditionalOptions) {
+        // Searchable combo — type to filter the list of values
+        el = document.createElement('input');
+        el.type         = 'text';
+        el.autocomplete = 'off';
+        el.placeholder  = '— select or type to search —';
+        el.dataset.combo = 'true';
+        comboOptionsByFid[fid] = values.slice();
+      } else if (isDateField(label0)) {
+        el = document.createElement('input');
+        el.type  = 'date';
+        el.value = new Date().toLocaleDateString('en-CA');
+      } else if (isNumberField(label0)) {
+        el = document.createElement('input');
+        el.type        = 'number';
+        el.step        = 'any';
+        el.inputMode   = 'decimal';
+        el.placeholder = '0.00';
+        el.classList.add('amount-input');
+      } else if (isTextareaField(label0)) {
+        el = document.createElement('textarea');
+        el.placeholder = 'Enter ' + label0.toLowerCase() + '…';
+      } else {
+        el = document.createElement('input');
+        el.type         = 'text';
+        el.placeholder  = 'Enter ' + label0.toLowerCase() + '…';
+        el.autocomplete = 'off';
+      }
+
+      // Auto-fill and lock "Entered By"-style free-text fields too
+      if (isEnteredByFld(label0) && el.tagName !== 'SELECT') {
+        el.value    = loggedUser;
+        el.readOnly = true;
+      }
+
+      el.id               = fid;
+      el.dataset.fieldName = name;
+      el.dataset.required  = optional ? '' : 'true';
+
+      // ── Label ──
+      const label = document.createElement('label');
+      label.setAttribute('for', fid);
+      label.innerHTML = escH(label0) +
+        (optional ? ' <span class="opt">(optional)</span>' : ' <span class="req">*</span>');
+
+      // ── Error hint ──
+      const errEl = document.createElement('div');
+      errEl.className   = 'err-msg';
+      errEl.id          = `e_${colIndex}`;
+      errEl.textContent = values.length ? `Select ${label0}` : `Enter ${label0}`;
+
+      // ── Wrapper ──
+      const div = document.createElement('div');
+      div.className = 'field';
+      div.appendChild(label);
+      if (el.dataset.combo === 'true') {
+        const wrap = document.createElement('div');
+        wrap.className = 'combo-wrap';
+        wrap.appendChild(el);
+        const list = document.createElement('div');
+        list.className = 'combo-list';
+        list.id = `cl_${colIndex}`;
+        wrap.appendChild(list);
+        div.appendChild(wrap);
+        setupCombo(el, list, fid);
+      } else {
+        div.appendChild(el);
+      }
+      div.appendChild(errEl);
+
+      // Conditional fields start hidden until their trigger condition matches
+      if (condByField[label0]) {
+        div.style.display = 'none';
+        div.dataset.conditional = 'true';
+        el.dataset.baseRequired = optional ? '' : 'true';
+        el.dataset.required = '';
+      }
+
+      container.appendChild(div);
+
+      // Clear validation on interaction
+      ['change', 'input'].forEach(ev => {
+        el.addEventListener(ev, () => {
+          el.classList.remove('invalid');
+          errEl.classList.remove('show');
+        });
+      });
+    });
+
+    renderTiles();
+
+    // ── Wire up conditional show/hide based on trigger field values ──
+    schemaFields.forEach(triggerField => {
+      const trigLabel = triggerField.label || triggerField.name;
+      const dependents = schemaFields.filter(f =>
+        (condByField[f.label || f.name] || []).some(c => c.triggerField === trigLabel)
+      );
+      if (!dependents.length) return;
+
+      const triggerEl = document.getElementById(`f_${triggerField.colIndex}`);
+      if (!triggerEl) return;
+
+      const update = () => {
+        const val = (triggerEl.value || '').trim().toLowerCase();
+        dependents.forEach(dep => {
+          const depLabel = dep.label || dep.name;
+          const depEl  = document.getElementById(`f_${dep.colIndex}`);
+          const depDiv = depEl.closest('.field');
+          const relevant = (condByField[depLabel] || []).filter(c =>
+            c.triggerField === trigLabel &&
+            c.triggerValues.some(tv => tv.toLowerCase() === val)
+          );
+          const matches = relevant.length > 0;
+          depDiv.style.display = matches ? '' : 'none';
+          depEl.dataset.required = matches ? depEl.dataset.baseRequired : '';
+
+          // Rebuild dropdown options based on which condition(s) match the current trigger value.
+          // If a matching condition supplies its own options, use only those (don't merge with base KEYS values).
+          if (depEl.tagName === 'SELECT') {
+            const prevVal = depEl.value;
+            const condOpts = [];
+            relevant.forEach(c => (c.options || []).forEach(o => { if (o && !condOpts.includes(o)) condOpts.push(o); }));
+            const opts = condOpts.length ? condOpts : (baseValuesByField[depLabel] || []).slice();
+            depEl.innerHTML = '';
+            const blank = document.createElement('option');
+            blank.value = ''; blank.textContent = '— select —';
+            depEl.appendChild(blank);
+            opts.forEach(v => {
+              const o = document.createElement('option');
+              o.value = o.textContent = v;
+              depEl.appendChild(o);
+            });
+            depEl.value = opts.includes(prevVal) ? prevVal : '';
+          } else if (depEl.dataset.combo === 'true') {
+            const prevVal = depEl.value;
+            const condOpts = [];
+            relevant.forEach(c => (c.options || []).forEach(o => { if (o && !condOpts.includes(o)) condOpts.push(o); }));
+            const opts = condOpts.length ? condOpts : (baseValuesByField[depLabel] || []).slice();
+            comboOptionsByFid[`f_${dep.colIndex}`] = opts;
+            depEl.value = opts.includes(prevVal) ? prevVal : '';
+            const listEl = document.getElementById(`cl_${dep.colIndex}`);
+            if (listEl) renderComboList(depEl, listEl, `f_${dep.colIndex}`);
+          }
+
+          if (!matches) {
+            depEl.value = '';
+            depEl.classList.remove('invalid');
+            const errEl = document.getElementById(`e_${dep.colIndex}`);
+            if (errEl) errEl.classList.remove('show');
+          }
+        });
+      };
+
+      triggerEl.addEventListener('change', update);
+      conditionalUpdaters.push(update);
+      update();
+    });
+  }
+
+
+  // ══ TILE SCREEN ══════════════════════════════════════════════════════════
+  function tileEl(colIndex) { return document.getElementById(`f_${colIndex}`); }
+
+  function renderTiles() {
+    const host = document.getElementById('tileHost');
+    host.innerHTML = '';
+
+    tileDefs.forEach((def, i) => {
+      const sec = document.createElement('section');
+      sec.className = 'tgroup';
+      sec.id = `tg_${def.colIndex}`;
+      sec.dataset.open = i === 0 ? '1' : '0';
+      sec.dataset.done = '0';
+
+      const head = document.createElement('button');
+      head.type = 'button';
+      head.className = 'tgroup-head';
+      head.innerHTML =
+        `<span class="tstep">${i + 1}</span>` +
+        `<span class="tgroup-label">${escH(def.label)}</span>` +
+        `<span class="tgroup-pick"></span>` +
+        `<span class="tcaret">&#9660;</span>`;
+      head.addEventListener('click', () => {
+        sec.dataset.open = sec.dataset.open === '1' ? '0' : '1';
+      });
+      sec.appendChild(head);
+
+      const grid = document.createElement('div');
+      grid.className = 'tiles' + (def.wide ? ' wide' : '');
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', def.label);
+
+      def.values.forEach(v => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tile';
+        b.setAttribute('aria-pressed', 'false');
+        b.dataset.value = v;
+
+        const main = document.createElement('span');
+        main.textContent = v;
+        b.appendChild(main);
+
+        const dir = CASH_DIR[String(v).toUpperCase()];
+        if (dir) {
+          b.dataset.dir = dir;
+          const d = document.createElement('span');
+          d.className = 'dir';
+          d.textContent = dir === 'in' ? '↓ Money in' : '↑ Money out';
+          b.appendChild(d);
+        }
+
+        b.addEventListener('click', () => pickTile(def, v));
+        grid.appendChild(b);
+      });
+
+      sec.appendChild(grid);
+      host.appendChild(sec);
+    });
+
+    syncTiles();
+  }
+
+  function pickTile(def, value) {
+    const el = tileEl(def.colIndex);
+    if (!el) return;
+    el.value = (el.value === value) ? '' : value;              // tapping again clears it
+    el.dispatchEvent(new Event('change', { bubbles: true }));  // drives conditional fields
+
+    const sec = document.getElementById(`tg_${def.colIndex}`);
+    sec.querySelectorAll('.tile').forEach(t => {
+      t.setAttribute('aria-pressed', String(t.dataset.value === el.value));
+    });
+    sec.querySelector('.tgroup-pick').textContent = el.value;
+    sec.dataset.done = el.value ? '1' : '0';
+    sec.dataset.open = el.value ? '0' : '1';
+
+    if (el.value) {
+      const next = tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value)[0];
+      if (next) {
+        const ns = document.getElementById(`tg_${next.colIndex}`);
+        ns.dataset.open = '1';
+        ns.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    syncTiles();
+  }
+
+  function tilesLeft() {
+    return tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value).length;
+  }
+
+  function syncTiles() {
+    const btn = document.getElementById('continueBtn');
+    const n = tilesLeft();
+    btn.disabled = n > 0;
+    btn.textContent = n === 0 ? 'Continue' : `Select ${n} more`;
+  }
+
+  function renderChips() {
+    const bar = document.getElementById('chipBar');
+    bar.innerHTML = '';
+    tileDefs.forEach(def => {
+      const el = tileEl(def.colIndex);
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.innerHTML = `<span class="k">${escH(def.label)}</span>`;
+      const v = document.createElement('span');
+      v.textContent = el ? el.value : '';
+      c.appendChild(v);
+      bar.appendChild(c);
+    });
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip-change';
+    b.textContent = 'Change';
+    b.addEventListener('click', () => showStep('tiles'));
+    bar.appendChild(b);
+  }
+
+  function showStep(which) {
+    document.getElementById('tileScreen').style.display = which === 'tiles' ? '' : 'none';
+    document.getElementById('form').style.display       = which === 'form'  ? '' : 'none';
+    if (which === 'form') renderChips();
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById('continueBtn').addEventListener('click', () => {
+    if (tilesLeft() === 0) showStep('form');
+  });
+
+  // ══ BACKGROUND RECEIPT UPLOAD ════════════════════════════════════════════
+  // The sheet row is written first and on its own. Photos follow afterwards and
+  // are linked to that row, so a failed upload can never cost the transaction.
+  function renderUpChip() {
+    const chip = document.getElementById('upChip');
+    const busy = uploadJobs.filter(j => j.state === 'up');
+    const bad  = uploadJobs.filter(j => j.state === 'fail');
+    if (!busy.length && !bad.length) { chip.style.display = 'none'; return; }
+    chip.style.display = '';
+    if (bad.length) {
+      chip.className = 'upchip bad';
+      chip.textContent = `⚠ ${bad.length} failed · Retry`;
+    } else {
+      const left = busy.reduce((a, j) => a + (j.files.length - j.done), 0);
+      chip.className = 'upchip';
+      chip.innerHTML = `<span class="upsp"></span>${left} uploading`;
+    }
+  }
+
+  async function runUploadJob(job) {
+    job.state = 'up';
+    renderUpChip();
+    for (let i = job.done; i < job.files.length; i++) {
+      try {
+        const up = await uploadReceipt(job.files[i], job.folder);
+        if (up.status !== 'success') throw new Error(up.message || 'upload failed');
+        job.urls.push(up.fileUrl);
+        job.done++;
+        renderUpChip();
+      } catch (err) {
+        job.state = 'fail';
+        renderUpChip();
+        toast('⚠ Receipt for #' + job.id + ' did not upload — tap Retry', 'fail');
+        return;
+      }
+    }
+
+    // Link the uploaded files to the row that was already saved
+    try {
+      const res = await jsonp({ action: 'attach', row: job.row, urls: job.urls.join(', ') });
+      if (res.status !== 'success') throw new Error(res.message || 'attach failed');
+      uploadJobs = uploadJobs.filter(j => j !== job);
+      renderUpChip();
+      toast('ὌE Receipt attached to #' + job.id, 'ok');
+      loadRecords();
+    } catch (err) {
+      job.state = 'fail';
+      renderUpChip();
+      toast('⚠ Receipt uploaded but not linked to #' + job.id + ' — tap Retry', 'fail');
+    }
+  }
+
+  document.getElementById('upChip').addEventListener('click', () => {
+    uploadJobs.filter(j => j.state === 'fail').forEach(j => runUploadJob(j));
+  });
+
+  window.addEventListener('beforeunload', e => {
+    if (uploadJobs.some(j => j.state === 'up')) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  function validate() {
+    let ok = true;
+    schemaFields.forEach(({ name, label, colIndex }) => {
+      const el = document.getElementById(`f_${colIndex}`);
+      if (!el) return;
+      const val = el.value.trim();
+
+      // List-driven field: whatever is in it must come from the KEYS list.
+      // This is the last line of defence against free text reaching the sheet.
+      if (el.dataset.combo === 'true' && val && !comboMatch(`f_${colIndex}`, val)) {
+        markInvalid(el, true);
+        if (ok) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ok = false;
+        return;
+      }
+
+      if (el.dataset.required !== 'true') return;
+      const bad = !val || (isNumberField(label || name) && isNaN(parseFloat(val)));
+      if (bad) {
+        el.classList.add('invalid');
+        const errEl = document.getElementById(`e_${colIndex}`);
+        if (errEl) errEl.classList.add('show');
+        if (ok) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ok = false;
+      }
+    });
+    return ok;
+  }
+
+  // ── Reset form ─────────────────────────────────────────────────────────────
+  function resetForm() {
+    schemaFields.forEach(({ name, label, colIndex }) => {
+      const el = document.getElementById(`f_${colIndex}`);
+      if (!el) return;
+      if (isDateField(label || name)) {
+        el.value = new Date().toLocaleDateString('en-CA');
+      } else if (isEnteredByFld(label || name)) {
+        // Keep the Entered By value (auto-filled and locked)
+      } else {
+        el.value = '';
+      }
+      el.classList.remove('invalid');
+      const errEl = document.getElementById(`e_${colIndex}`);
+      if (errEl) errEl.classList.remove('show');
+    });
+    // Re-evaluate conditional field visibility now that trigger fields are cleared
+    conditionalUpdaters.forEach(fn => fn());
+
+    // Reset file(s)
+    attachedFiles = [];
+    document.getElementById('billFile').value = '';
+    renderFileList();
+  }
+
+  // Clear the tile answers between entries. The first group (the shop) is kept,
+  // since people usually log several transactions from the same place.
+  function resetTiles(keepFirst) {
+    tileDefs.forEach((def, i) => {
+      const el = tileEl(def.colIndex);
+      const sec = document.getElementById(`tg_${def.colIndex}`);
+      if (!el || !sec) return;
+      if (keepFirst && i === 0 && el.value) { sec.dataset.open = '0'; return; }
+      el.value = '';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      sec.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', 'false'));
+      sec.querySelector('.tgroup-pick').textContent = '';
+      sec.dataset.done = '0';
+      sec.dataset.open = '0';
+    });
+    const next = tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value)[0];
+    if (next) document.getElementById(`tg_${next.colIndex}`).dataset.open = '1';
+    syncTiles();
+  }
+
+  // ── File upload listener ─────────────────────────────────────────────────
+  let attachedFiles = [];
+
+  document.getElementById('billFile').addEventListener('change', function () {
+    const f = this.files[0];
+    if (f) attachedFiles.push(f);
+    this.value = ''; // allow picking the same or another file again
+    renderFileList();
+  });
+
+  function renderFileList() {
+    const fl  = document.getElementById('fileList');
+    const lbl = document.querySelector('.file-upload-label');
+    if (!attachedFiles.length) {
+      fl.innerHTML = '';
+      document.getElementById('filePickerText').textContent = 'Tap to attach photo or PDF';
+      if (lbl) lbl.classList.remove('has-file');
+      return;
+    }
+    document.getElementById('filePickerText').textContent = '+ Add another file';
+    if (lbl) lbl.classList.add('has-file');
+    fl.innerHTML = attachedFiles.map((f, i) => `
+      <div class="file-item">
+        <span class="file-item-name">📎 ${escH(f.name)}</span>
+        <button type="button" class="file-remove" data-idx="${i}" title="Remove">✕</button>
+      </div>
+    `).join('');
+    fl.querySelectorAll('.file-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        attachedFiles.splice(parseInt(btn.dataset.idx, 10), 1);
+        renderFileList();
+      });
+    });
+  }
+
+  // ── Shrink photos before upload ────────────────────────────────────────────
+  // Phone cameras produce 3–8 MB JPEGs; receipts stay perfectly readable at
+  // 1600px / quality 0.7, which is typically 10–20x smaller and that much faster
+  // to upload. Non-images (PDFs) and anything that doesn't shrink pass through
+  // untouched, and any failure falls back to the original file.
+  const IMG_MAX_DIM = 1600;
+  const IMG_QUALITY = 0.7;
+
+  async function compressImage(file) {
+    if (!/^image\//i.test(file.type) || /gif|svg/i.test(file.type)) return file;
+    try {
+      // imageOrientation keeps EXIF-rotated phone photos the right way up
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const scale = Math.min(1, IMG_MAX_DIM / Math.max(bmp.width, bmp.height));
+      const w = Math.max(1, Math.round(bmp.width  * scale));
+      const h = Math.max(1, Math.round(bmp.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      if (bmp.close) bmp.close();
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', IMG_QUALITY));
+      if (!blob || blob.size >= file.size) return file;   // never upload something bigger
+
+      const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+      return new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() });
+    } catch (err) {
+      return file;   // unsupported browser or decode failure — send as-is
+    }
+  }
+
+  // ── Upload receipt to Drive via Apps Script doPost ─────────────────────────
+  async function uploadReceipt(file, folderName) {
+    file = await compressImage(file);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async ev => {
+        const base64 = ev.target.result.split(',')[1];
+        try {
+          const resp = await fetch(SCRIPT_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'text/plain' },  // avoids CORS preflight
+            body: JSON.stringify({
+              action:     'uploadFile',
+              folderName: folderName,
+              fileName:   file.name,
+              mimeType:   file.type || 'application/octet-stream',
+              base64:     base64
+            })
+          });
+          resolve(await resp.json());
+        } catch (err) { reject(err); }
+      };
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  document.getElementById('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+
+    // Collect all values keyed by their column header name
+    const payload = {};
+    schemaFields.forEach(({ name, colIndex }) => {
+      const el = document.getElementById(`f_${colIndex}`);
+      if (!el) return;
+      let val = el.value.trim();
+      // Convert date to DD-MMM-YYYY (e.g. 01-Jul-2026) — unambiguous in any sheet locale
+      if (el.type === 'date' && val) {
+        const [y, m, d] = val.split('-');
+        const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m - 1] || m;
+        val = `${d}-${mon}-${y}`;
+      }
+      payload[name] = val;
+    });
+
+    // Reserve a unique sequential ID for this record
+    const recordId = await reserveId();
+    payload['ID'] = String(recordId);
+
+    // Photos are taken out of the critical path: the row is written on its own,
+    // then the files upload in the background and are linked to that row.
+    const billFiles = attachedFiles.slice();
+    const now = new Date();
+    const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+    const typeF   = schemaFields.find(f => /^type$/i.test(f.label || f.name) || /trans.*type|type.*trans/i.test(f.label || f.name));
+    const paidByF = schemaFields.find(f => /paid.?by/i.test(f.label || f.name));
+    const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
+    const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
+
+    btn.innerHTML = '<span class="spinner"></span>Saving…';
+    try {
+      const json = await jsonp(payload);
+      if (json.status === 'success') {
+        toast('\u2713 Saved #' + recordId, 'ok');
+
+        if (billFiles.length && json.row) {
+          uploadJobs.push({
+            id: recordId, row: json.row, folder: folder || ts,
+            files: billFiles, done: 0, urls: [], state: 'up'
+          });
+          runUploadJob(uploadJobs[uploadJobs.length - 1]);   // deliberately not awaited
+        } else if (billFiles.length) {
+          toast('\u26A0 Saved, but the receipt could not be linked', 'fail');
+        }
+
+        resetForm();
+        resetTiles(true);
+        showStep('tiles');
+        loadRecords();
+      } else {
+        toast('\u26A0 ' + (json.message || 'Unknown error'), 'fail');
+      }
+    } catch (err) {
+      toast('\u2717 ' + err.message, 'fail');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Submit Transaction';
+    }
+  });
+
+  // ══ RECORDS (live from sheet — only the logged-in user's entries are shown) ══
+  let serverRows = [];
+
+  async function loadRecords() {
+    try {
+      // Ask the backend for this user's own records only (it returns their latest 100).
+      // The client-side filter in renderRecords() stays as a safety net for older backends.
+      const json = await jsonp({ action: 'records', user: currentUser });
+      if (json.status === 'success') {
+        serverRows = json.rows || [];
+        renderRecords();
+      }
+    } catch (err) { /* silent — keep showing previous list */ }
+  }
+
+  async function deleteRecord(row, enteredBy) {
+    if (!confirm('Mark this record as deleted in the sheet?')) return;
+    try {
+      const json = await jsonp({ action: 'delete', row, enteredBy: currentUser });
+      if (json.status === 'success') { toast('Record marked as deleted', 'ok'); loadRecords(); }
+      else toast('⚠ ' + json.message, 'fail');
+    } catch (err) { toast('✗ ' + err.message, 'fail'); }
+  }
+
+  function renderRecords() {
+    const list  = document.getElementById('entriesList');
+    const count = document.getElementById('entriesCount');
+
+    // Only show records entered by the logged-in user
+    const entField = schemaFields.find(f => isEnteredByFld(f.label || f.name));
+    const me = String(currentUser || '').trim().toLowerCase();
+    let rows = serverRows.filter(r => {
+      if (!entField || !me) return true;
+      return String((r.data || {})[entField.name] || '').trim().toLowerCase() === me;
+    });
+
+    // Search filter — match the query against any field value
+    const q = (document.getElementById('recordSearch').value || '').trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(r =>
+        Object.values(r.data || {}).some(v => String(v).toLowerCase().includes(q))
+      );
+    }
+
+    // Newest first — by entry date, falling back to sheet order for same-day entries
+    const dateFld = schemaFields.find(f => isDateField(f.label || f.name));
+    const recTime = r => {
+      const t = dateFld ? parseRecDate((r.data || {})[dateFld.name]) : null;
+      return t === null ? -Infinity : t;   // undated rows sink to the bottom
+    };
+    rows = rows.slice().sort((a, b) => (recTime(b) - recTime(a)) || (b.row - a.row));
+
+    count.textContent = rows.filter(r => !r.deleted).length;
+
+    if (!rows.length) {
+      list.innerHTML = `<div class="empty-entries">${q ? 'No records match your search.' : 'No records yet. Submit a transaction to see it here.'}</div>`;
+      return;
+    }
+
+    const receiptField = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.label || f.name));
+
+    list.innerHTML = rows.map(r => {
+      const d      = r.data || {};
+      const dateF  = schemaFields.find(f => isDateField(f.label || f.name)   && d[f.name]);
+      const amtF   = schemaFields.find(f => isNumberField(f.label || f.name) && d[f.name]);
+      const entByF = schemaFields.find(f => isEnteredByFld(f.label || f.name) && d[f.name]);
+      const fileUrls = receiptField && d[receiptField.name]
+        ? String(d[receiptField.name]).split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const bodyFields = schemaFields.filter(f => f !== dateF && f !== amtF && f !== entByF && f !== receiptField && d[f.name]);
+      const enteredBy  = entByF ? String(d[entByF.name]) : '';
+
+      return `
+        <div class="entry-card ${r.deleted ? 'deleted' : ''}">
+          ${!r.deleted ? `<button class="delete-btn" onclick="deleteRecord(${r.row},'${enteredBy.replace(/'/g,"\\'")}')" title="Mark as deleted">✕</button>` : ''}
+          <div class="entry-top">
+            <div class="entry-meta">
+              ${d['ID'] ? `<span class="id-badge">#${escH(d['ID'])}</span> ` : ''}${dateF  ? `<strong>${escH(d[dateF.name])}</strong>` : ''}
+              ${r.deleted ? '<span class="deleted-badge">Deleted</span>' : ''}
+              ${entByF ? `<br>${escH(d[entByF.name])}` : ''}
+            </div>
+            ${amtF ? `<div class="entry-amount">Rs ${fmtAmt(d[amtF.name])}</div>` : ''}
+          </div>
+          <div class="entry-fields">
+            ${bodyFields.map(f => `
+              <div class="entry-kv">
+                <span class="entry-k">${escH(f.label || f.name)}</span>
+                <span class="entry-v">${escH(d[f.name])}</span>
+              </div>
+            `).join('')}
+          </div>
+          ${fileUrls.length ? `<div class="receipt-links">${fileUrls.map((u, i) => `<a class="receipt-link" href="${escH(u)}" target="_blank">📎 View Receipt${fileUrls.length > 1 ? ' ' + (i+1) : ''}</a>`).join('')}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', loadRecords);
+  document.getElementById('recordSearch').addEventListener('input', renderRecords);
+</script>
+</body>
+</html>
