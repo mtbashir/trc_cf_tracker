@@ -1336,17 +1336,20 @@
 
   // Clear the tile answers between entries. The first group (the shop) is kept,
   // since people usually log several transactions from the same place.
-  function resetTiles(keepFirst) {
+  // keepVal is read BEFORE resetForm() runs, because that clears the hidden inputs
+  // the tiles write into.
+  function resetTiles(keepFirst, keepVal) {
     tileDefs.forEach((def, i) => {
       const el = tileEl(def.colIndex);
       const sec = document.getElementById(`tg_${def.colIndex}`);
       if (!el || !sec) return;
-      if (keepFirst && i === 0 && el.value) { sec.dataset.open = '0'; return; }
-      el.value = '';
+      const keep = !!(keepFirst && i === 0 && keepVal);
+      el.value = keep ? keepVal : '';
       el.dispatchEvent(new Event('change', { bubbles: true }));
-      sec.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', 'false'));
-      sec.querySelector('.tgroup-pick').textContent = '';
-      sec.dataset.done = '0';
+      sec.querySelectorAll('.tile').forEach(t =>
+        t.setAttribute('aria-pressed', String(keep && t.dataset.value === keepVal)));
+      sec.querySelector('.tgroup-pick').textContent = el.value;
+      sec.dataset.done = el.value ? '1' : '0';
       sec.dataset.open = '0';
     });
     const next = tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value)[0];
@@ -1485,6 +1488,9 @@
     const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
     const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
 
+    // remember the first tile answer (the shop) before the form is cleared
+    const keepTile = tileDefs.length ? (tileEl(tileDefs[0].colIndex) || {}).value : '';
+
     btn.innerHTML = '<span class="spinner"></span>Saving…';
     try {
       const json = await jsonp(payload);
@@ -1502,7 +1508,7 @@
         }
 
         resetForm();
-        resetTiles(true);
+        resetTiles(true, keepTile);
         showStep('tiles');
         loadRecords();
       } else {
