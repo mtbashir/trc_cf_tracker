@@ -1262,7 +1262,7 @@
       if (res.status !== 'success') throw new Error(res.message || 'attach failed');
       uploadJobs = uploadJobs.filter(j => j !== job);
       renderUpChip();
-      toast('ὌE Receipt attached to #' + job.id, 'ok');
+      toast('📎 Receipt attached to #' + job.id, 'ok');
       loadRecords();
     } catch (err) {
       job.state = 'fail';
