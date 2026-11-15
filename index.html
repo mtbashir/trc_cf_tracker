@@ -185,6 +185,87 @@
     .err-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
     .err-msg.show { display: block; }
 
+    /* ── Tile picker ── */
+    .tgroup {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; margin-bottom: 10px;
+      scroll-margin-top: 70px;
+    }
+    .tgroup-head {
+      width: 100%; background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 13px; text-align: left; color: var(--text);
+      font-family: inherit;
+    }
+    .tstep {
+      flex: none; width: 22px; height: 22px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: #FAFBFF; color: var(--muted);
+      border: 1.5px solid var(--border);
+      font-size: 11px; font-weight: 700;
+    }
+    .tgroup[data-done="1"] .tstep { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tgroup-label {
+      flex: 1; min-width: 0;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.1px;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .tgroup-pick { font-size: 13px; font-weight: 700; color: var(--primary); text-align: right; overflow-wrap: anywhere; }
+    .tgroup[data-done="0"] .tgroup-pick { display: none; }
+    .tcaret { flex: none; color: var(--muted); font-size: 10px; transition: transform .15s; }
+    .tgroup[data-open="1"] .tcaret { transform: rotate(180deg); }
+    .tiles { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); padding: 0 13px 13px; }
+    .tiles.wide { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); }
+    .tgroup[data-open="0"] .tiles { display: none; }
+    .tile {
+      position: relative; background: #FAFBFF; color: var(--text);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 12px 8px; min-height: 56px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      font-size: 13.5px; font-weight: 700; letter-spacing: .3px; text-align: center;
+      cursor: pointer; font-family: inherit;
+    }
+    .tile:active { transform: scale(.975); }
+    .tile[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tile[aria-pressed="true"]::after { content: "✓"; position: absolute; top: 4px; right: 6px; font-size: 10px; }
+    .tile .dir { font-size: 10px; font-weight: 600; }
+    .tile[data-dir="in"]  .dir { color: var(--success); }
+    .tile[data-dir="out"] .dir { color: #C2410C; }
+    .tile[aria-pressed="true"] .dir { color: rgba(255,255,255,.85); }
+
+    /* Chips summarising the tile answers on the form screen */
+    .chips {
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 11px; margin-bottom: 12px;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #EEF2FF; color: var(--primary);
+      border-radius: 99px; padding: 4px 10px; font-size: 11.5px; font-weight: 700;
+    }
+    .chip .k { font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; opacity: .62; }
+    .chip-change {
+      margin-left: auto; background: none; border: none; color: var(--primary);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+
+    /* Background upload indicator */
+    .upchip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 99px; padding: 6px 10px; margin-right: 7px;
+      font-size: 11px; font-weight: 600; cursor: default; white-space: nowrap;
+    }
+    .upchip.bad { background: var(--error); border-color: var(--error); cursor: pointer; }
+    .upsp {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+      animation: spin .7s linear infinite;
+    }
+    .hdr-right { display: flex; align-items: center; }
+
     /* ── Searchable combo dropdown ── */
     .combo-wrap { position: relative; }
     .combo-list {
@@ -376,9 +457,12 @@
       <h1 id="headerTitle">TRC CF Tracker</h1>
       <p>New Transaction</p>
     </div>
-    <button class="logout-btn" id="logoutBtn">
-      <span id="headerUser"></span> · Logout
-    </button>
+    <div class="hdr-right">
+      <button class="upchip" id="upChip" type="button" style="display:none"></button>
+      <button class="logout-btn" id="logoutBtn">
+        <span id="headerUser"></span> · Logout
+      </button>
+    </div>
   </header>
 
   <div class="wrap">
@@ -399,11 +483,20 @@
       <button onclick="loadSchemaAndKeys()">↺ Retry</button>
     </div>
 
-    <form id="form" novalidate>
+    <!-- Step 1: tile picker, built from the KEYS lists -->
+    <div id="tileScreen" style="display:none;">
+      <div id="tileHost"></div>
+      <button type="button" class="btn-submit" id="continueBtn" disabled>Continue</button>
+    </div>
+
+    <form id="form" novalidate style="display:none;">
+
+      <div class="chips" id="chipBar"></div>
+      <div id="hiddenFields" style="display:none"></div>
 
       <!-- Dynamic fields injected here -->
       <div class="card" id="fieldsCard" style="display:none;">
-        <div class="card-title">Transaction Details</div>
+        <div class="card-title">Remaining details</div>
         <div id="dynamicFields"></div>
       </div>
 
@@ -449,6 +542,12 @@
   let conditions     = [];  // [{field, triggerField, triggerValues, options}, ...]
   let conditionalUpdaters = [];
   let comboOptionsByFid = {};  // {fid: [option, ...]} — current option list for searchable combo fields
+  let tileDefs    = [];        // [{label, colIndex, values, wide}] — fields answered as tiles
+  let uploadJobs  = [];        // background receipt uploads still in flight
+  // Fields answered as tiles on the first screen. Override with a _TILES column in KEYS.
+  const TILE_DEFAULT = ['Shop', 'Nature', 'Type', 'Paid To Type', 'Paid By', 'Payment Mode'];
+  // Nature is the one list whose values carry a direction, so the tiles show it
+  const CASH_DIR = { PAID: 'out', PAYABLE: 'out', RECEIVED: 'in', RECEIVABLE: 'in' };
   let currentUser    = '';
 
   // ── JSONP ──────────────────────────────────────────────────────────────────
@@ -660,6 +759,8 @@
       document.getElementById('fieldsCard').style.display = '';
       document.getElementById('uploadCard').style.display = '';
       document.getElementById('submitBtn').disabled = false;
+      document.getElementById('tileScreen').style.display = '';
+      showStep(tileDefs.length ? 'tiles' : 'form');
     } catch (err) {
       document.getElementById('loadBanner').classList.add('hidden');
       document.getElementById('errBanner').style.display = 'block';
@@ -765,6 +866,17 @@
     });
     const baseValuesByField = {};
 
+    // A field is answered by tiles when it is named in _TILES (or the default list),
+    // has its own KEYS values, and isn't conditional or auto-filled.
+    const wanted = (keysData['_TILES'] || []).map(v => String(v).trim()).filter(Boolean);
+    const tileNames = (wanted.length ? wanted : TILE_DEFAULT).map(v => v.toLowerCase());
+    const isTileField = (lbl, vals) =>
+      tileNames.indexOf(lbl.toLowerCase()) !== -1 && vals.length &&
+      !condByField[lbl] && !isEnteredByFld(lbl);
+
+    tileDefs = [];
+    document.getElementById('hiddenFields').innerHTML = '';
+
     schemaFields.forEach(field => {
       const { name, colIndex } = field;
       const label0 = field.label || name;
@@ -774,6 +886,22 @@
       const hasConditionalOptions = (condByField[label0] || []).some(c => (c.options || []).length > 0);
       const optional = optionalFields.has(label0);
       const fid      = `f_${colIndex}`;
+
+      // Tile fields keep a hidden input under the same id, so validation, the payload,
+      // the conditional rules and resetForm all keep working exactly as before.
+      if (isTileField(label0, values)) {
+        const h = document.createElement('input');
+        h.type = 'hidden';
+        h.id = fid;
+        h.dataset.fieldName = name;
+        h.dataset.required  = optional ? '' : 'true';
+        document.getElementById('hiddenFields').appendChild(h);
+        tileDefs.push({
+          label: label0, colIndex, values,
+          wide: values.some(v => String(v).length > 9)
+        });
+        return;
+      }
 
       // ── Create the appropriate input element ──
       let el;
@@ -889,6 +1017,8 @@
       });
     });
 
+    renderTiles();
+
     // ── Wire up conditional show/hide based on trigger field values ──
     schemaFields.forEach(triggerField => {
       const trigLabel = triggerField.label || triggerField.name;
@@ -957,6 +1087,198 @@
     });
   }
 
+
+  // ══ TILE SCREEN ══════════════════════════════════════════════════════════
+  function tileEl(colIndex) { return document.getElementById(`f_${colIndex}`); }
+
+  function renderTiles() {
+    const host = document.getElementById('tileHost');
+    host.innerHTML = '';
+
+    tileDefs.forEach((def, i) => {
+      const sec = document.createElement('section');
+      sec.className = 'tgroup';
+      sec.id = `tg_${def.colIndex}`;
+      sec.dataset.open = i === 0 ? '1' : '0';
+      sec.dataset.done = '0';
+
+      const head = document.createElement('button');
+      head.type = 'button';
+      head.className = 'tgroup-head';
+      head.innerHTML =
+        `<span class="tstep">${i + 1}</span>` +
+        `<span class="tgroup-label">${escH(def.label)}</span>` +
+        `<span class="tgroup-pick"></span>` +
+        `<span class="tcaret">&#9660;</span>`;
+      head.addEventListener('click', () => {
+        sec.dataset.open = sec.dataset.open === '1' ? '0' : '1';
+      });
+      sec.appendChild(head);
+
+      const grid = document.createElement('div');
+      grid.className = 'tiles' + (def.wide ? ' wide' : '');
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', def.label);
+
+      def.values.forEach(v => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tile';
+        b.setAttribute('aria-pressed', 'false');
+        b.dataset.value = v;
+
+        const main = document.createElement('span');
+        main.textContent = v;
+        b.appendChild(main);
+
+        const dir = CASH_DIR[String(v).toUpperCase()];
+        if (dir) {
+          b.dataset.dir = dir;
+          const d = document.createElement('span');
+          d.className = 'dir';
+          d.textContent = dir === 'in' ? '↓ Money in' : '↑ Money out';
+          b.appendChild(d);
+        }
+
+        b.addEventListener('click', () => pickTile(def, v));
+        grid.appendChild(b);
+      });
+
+      sec.appendChild(grid);
+      host.appendChild(sec);
+    });
+
+    syncTiles();
+  }
+
+  function pickTile(def, value) {
+    const el = tileEl(def.colIndex);
+    if (!el) return;
+    el.value = (el.value === value) ? '' : value;              // tapping again clears it
+    el.dispatchEvent(new Event('change', { bubbles: true }));  // drives conditional fields
+
+    const sec = document.getElementById(`tg_${def.colIndex}`);
+    sec.querySelectorAll('.tile').forEach(t => {
+      t.setAttribute('aria-pressed', String(t.dataset.value === el.value));
+    });
+    sec.querySelector('.tgroup-pick').textContent = el.value;
+    sec.dataset.done = el.value ? '1' : '0';
+    sec.dataset.open = el.value ? '0' : '1';
+
+    if (el.value) {
+      const next = tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value)[0];
+      if (next) {
+        const ns = document.getElementById(`tg_${next.colIndex}`);
+        ns.dataset.open = '1';
+        ns.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    syncTiles();
+  }
+
+  function tilesLeft() {
+    return tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value).length;
+  }
+
+  function syncTiles() {
+    const btn = document.getElementById('continueBtn');
+    const n = tilesLeft();
+    btn.disabled = n > 0;
+    btn.textContent = n === 0 ? 'Continue' : `Select ${n} more`;
+  }
+
+  function renderChips() {
+    const bar = document.getElementById('chipBar');
+    bar.innerHTML = '';
+    tileDefs.forEach(def => {
+      const el = tileEl(def.colIndex);
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.innerHTML = `<span class="k">${escH(def.label)}</span>`;
+      const v = document.createElement('span');
+      v.textContent = el ? el.value : '';
+      c.appendChild(v);
+      bar.appendChild(c);
+    });
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip-change';
+    b.textContent = 'Change';
+    b.addEventListener('click', () => showStep('tiles'));
+    bar.appendChild(b);
+  }
+
+  function showStep(which) {
+    document.getElementById('tileScreen').style.display = which === 'tiles' ? '' : 'none';
+    document.getElementById('form').style.display       = which === 'form'  ? '' : 'none';
+    if (which === 'form') renderChips();
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById('continueBtn').addEventListener('click', () => {
+    if (tilesLeft() === 0) showStep('form');
+  });
+
+  // ══ BACKGROUND RECEIPT UPLOAD ════════════════════════════════════════════
+  // The sheet row is written first and on its own. Photos follow afterwards and
+  // are linked to that row, so a failed upload can never cost the transaction.
+  function renderUpChip() {
+    const chip = document.getElementById('upChip');
+    const busy = uploadJobs.filter(j => j.state === 'up');
+    const bad  = uploadJobs.filter(j => j.state === 'fail');
+    if (!busy.length && !bad.length) { chip.style.display = 'none'; return; }
+    chip.style.display = '';
+    if (bad.length) {
+      chip.className = 'upchip bad';
+      chip.textContent = `⚠ ${bad.length} failed · Retry`;
+    } else {
+      const left = busy.reduce((a, j) => a + (j.files.length - j.done), 0);
+      chip.className = 'upchip';
+      chip.innerHTML = `<span class="upsp"></span>${left} uploading`;
+    }
+  }
+
+  async function runUploadJob(job) {
+    job.state = 'up';
+    renderUpChip();
+    for (let i = job.done; i < job.files.length; i++) {
+      try {
+        const up = await uploadReceipt(job.files[i], job.folder);
+        if (up.status !== 'success') throw new Error(up.message || 'upload failed');
+        job.urls.push(up.fileUrl);
+        job.done++;
+        renderUpChip();
+      } catch (err) {
+        job.state = 'fail';
+        renderUpChip();
+        toast('⚠ Receipt for #' + job.id + ' did not upload — tap Retry', 'fail');
+        return;
+      }
+    }
+
+    // Link the uploaded files to the row that was already saved
+    try {
+      const res = await jsonp({ action: 'attach', row: job.row, urls: job.urls.join(', ') });
+      if (res.status !== 'success') throw new Error(res.message || 'attach failed');
+      uploadJobs = uploadJobs.filter(j => j !== job);
+      renderUpChip();
+      toast('📎 Receipt attached to #' + job.id, 'ok');
+      loadRecords();
+    } catch (err) {
+      job.state = 'fail';
+      renderUpChip();
+      toast('⚠ Receipt uploaded but not linked to #' + job.id + ' — tap Retry', 'fail');
+    }
+  }
+
+  document.getElementById('upChip').addEventListener('click', () => {
+    uploadJobs.filter(j => j.state === 'fail').forEach(j => runUploadJob(j));
+  });
+
+  window.addEventListener('beforeunload', e => {
+    if (uploadJobs.some(j => j.state === 'up')) { e.preventDefault(); e.returnValue = ''; }
+  });
+
   // ── Validation ─────────────────────────────────────────────────────────────
   function validate() {
     let ok = true;
@@ -1010,6 +1332,29 @@
     attachedFiles = [];
     document.getElementById('billFile').value = '';
     renderFileList();
+  }
+
+  // Clear the tile answers between entries. The first group (the shop) is kept,
+  // since people usually log several transactions from the same place.
+  // keepVal is read BEFORE resetForm() runs, because that clears the hidden inputs
+  // the tiles write into.
+  function resetTiles(keepFirst, keepVal) {
+    tileDefs.forEach((def, i) => {
+      const el = tileEl(def.colIndex);
+      const sec = document.getElementById(`tg_${def.colIndex}`);
+      if (!el || !sec) return;
+      const keep = !!(keepFirst && i === 0 && keepVal);
+      el.value = keep ? keepVal : '';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      sec.querySelectorAll('.tile').forEach(t =>
+        t.setAttribute('aria-pressed', String(keep && t.dataset.value === keepVal)));
+      sec.querySelector('.tgroup-pick').textContent = el.value;
+      sec.dataset.done = el.value ? '1' : '0';
+      sec.dataset.open = '0';
+    });
+    const next = tileDefs.filter(d => !(tileEl(d.colIndex) || {}).value)[0];
+    if (next) document.getElementById(`tg_${next.colIndex}`).dataset.open = '1';
+    syncTiles();
   }
 
   // ── File upload listener ─────────────────────────────────────────────────
@@ -1133,48 +1478,44 @@
     const recordId = await reserveId();
     payload['ID'] = String(recordId);
 
-    // Handle receipt upload(s)
-    const billFiles = attachedFiles;
-    if (billFiles.length) {
-      const now = new Date();
-      const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-      const typeF   = schemaFields.find(f => /^type$/i.test(f.label || f.name) || /trans.*type|type.*trans/i.test(f.label || f.name));
-      const paidByF = schemaFields.find(f => /paid.?by/i.test(f.label || f.name));
-      const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
-      const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
-      const fileUrls = [];
-      for (let i = 0; i < billFiles.length; i++) {
-        btn.innerHTML = `<span class="spinner"></span>Uploading attachment ${i+1} of ${billFiles.length}…`;
-        try {
-          const up = await uploadReceipt(billFiles[i], folder || ts);
-          if (up.status === 'success') {
-            fileUrls.push(up.fileUrl);
-          } else {
-            toast('⚠ Attachment not saved: ' + up.message, 'fail');
-          }
-        } catch (upErr) {
-          toast('⚠ An attachment failed to upload — continuing', 'fail');
-        }
-      }
-      if (fileUrls.length) {
-        // Save under whatever column the sheet calls it (auto-detect or fall back)
-        const receiptCol = schemaFields.find(f => /receipt|bill.*url|attachment/i.test(f.label || f.name));
-        payload[receiptCol ? receiptCol.name : 'Receipt URL'] = fileUrls.join(', ');
-      }
-    }
+    // Photos are taken out of the critical path: the row is written on its own,
+    // then the files upload in the background and are linked to that row.
+    const billFiles = attachedFiles.slice();
+    const now = new Date();
+    const ts  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+    const typeF   = schemaFields.find(f => /^type$/i.test(f.label || f.name) || /trans.*type|type.*trans/i.test(f.label || f.name));
+    const paidByF = schemaFields.find(f => /paid.?by/i.test(f.label || f.name));
+    const parts   = [recordId, ts, typeF ? payload[typeF.name] : '', paidByF ? payload[paidByF.name] : ''];
+    const folder  = parts.filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 80);
 
-    btn.innerHTML = '<span class="spinner"></span>Submitting…';
+    // remember the first tile answer (the shop) before the form is cleared
+    const keepTile = tileDefs.length ? (tileEl(tileDefs[0].colIndex) || {}).value : '';
+
+    btn.innerHTML = '<span class="spinner"></span>Saving…';
     try {
       const json = await jsonp(payload);
       if (json.status === 'success') {
-        toast('✓ Transaction recorded!', 'ok');
+        toast('\u2713 Saved #' + recordId, 'ok');
+
+        if (billFiles.length && json.row) {
+          uploadJobs.push({
+            id: recordId, row: json.row, folder: folder || ts,
+            files: billFiles, done: 0, urls: [], state: 'up'
+          });
+          runUploadJob(uploadJobs[uploadJobs.length - 1]);   // deliberately not awaited
+        } else if (billFiles.length) {
+          toast('\u26A0 Saved, but the receipt could not be linked', 'fail');
+        }
+
         resetForm();
+        resetTiles(true, keepTile);
+        showStep('tiles');
         loadRecords();
       } else {
-        toast('⚠ ' + (json.message || 'Unknown error'), 'fail');
+        toast('\u26A0 ' + (json.message || 'Unknown error'), 'fail');
       }
     } catch (err) {
-      toast('✗ ' + err.message, 'fail');
+      toast('\u2717 ' + err.message, 'fail');
     } finally {
       btn.disabled = false;
       btn.textContent = 'Submit Transaction';
